@@ -1,6 +1,7 @@
 import os
-import sys
+import shlex
 import subprocess
+import sys
 
 from enum import Enum
 from functools import total_ordering
@@ -141,8 +142,32 @@ class Instance:
         rmtree(path=self.work_dir, ignore_errors=True)
         step('Removed all relevant directories')
 
+    def _configure_options(self):
+        pg_config = os.path.join(self.main_dir, 'bin', 'pg_config')
+        norsu_file = os.path.join(self.main_dir, '.norsu_configure')
+
+        if os.path.exists(norsu_file):
+            with open(norsu_file, 'r') as f:
+                return shlex.split(f.read())
+
+        elif os.path.exists(pg_config):
+            args = [pg_config, '--configure']
+
+            p = subprocess.Popen(args,
+                                 stdout=subprocess.STDOUT,
+                                 stderr=subprocess.DEVNULL)
+
+            out, _ = p.communicate()
+
+            return shlex.split(out.decode('utf8'))
+
+        else:
+            return ['CFLAGS=-g3', '--enable-cassert']
+
     def _prepare_work_dir(self):
-        if not os.path.exists(self.work_dir):
+        git_repo = os.path.join(self.work_dir, '.git')
+
+        if not os.path.exists(git_repo):
             def to_key(x):
                 return GitRefVer(x)
 
@@ -174,7 +199,8 @@ class Instance:
 
                 # select the most relevant branch
                 ref = sorted(refs, reverse=True, key=to_key)[0]
-                step('Selected branch {}'.format(Style.bold(ref)))
+                step('Selected repo', Style.bold(repo))
+                step('Selected branch', Style.bold(ref))
 
                 args = [
                     'git',
@@ -206,10 +232,8 @@ class Instance:
         if not os.path.exists(makefile):
             args = [
                 './configure',
-                'CFLAGS=-g3',
-                '--enable-cassert',
                 '--prefix={}'.format(self.main_dir)
-            ]
+            ] + self._configure_options()
 
             p = subprocess.Popen(args,
                                  cwd=self.work_dir,
@@ -245,7 +269,7 @@ def cmd_instance(cmd, entries):
             if not e.startswith('.')
         )
 
-    for entry in entries:
+    for entry in sorted(entries):
         print('Selected instance:', Style.bold(entry))
 
         instance = Instance(entry)
@@ -268,12 +292,23 @@ def cmd_purge(_, entries):
             if not e.startswith('.')
         )
 
-    for entry in entries:
+    for entry in sorted(entries):
         instance = os.path.join(NORSU_DIR, entry)
 
         if not os.path.exists(instance):
             path = os.path.join(WORK_DIR, entry)
             rmtree(path=path, ignore_errors=True)
+
+
+def cmd_path(_, entries):
+    if not entries:
+        entries = (
+            e for e in os.listdir(NORSU_DIR)
+            if not e.startswith('.')
+        )
+
+    for entry in sorted(entries):
+        print(os.path.join(NORSU_DIR, entry))
 
 
 def cmd_help(*_):
@@ -284,7 +319,6 @@ def cmd_help(*_):
     print('\t{} <command> [options]'.format(name))
     print()
     print('Commands:')
-    print()
 
     for method in METHODS.keys():
         print('\t{}'.format(method))
@@ -318,6 +352,7 @@ METHODS = {
     'install': cmd_instance,
     'remove': cmd_instance,
     'purge': cmd_purge,
+    'path': cmd_path,
     'help': cmd_help,
 }
 
