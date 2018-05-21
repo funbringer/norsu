@@ -109,7 +109,7 @@ class InstanceName:
         pattern = self.name
 
         if self.type == InstanceNameType.Version:
-            pattern = pattern.replace('.', '_')
+            pattern = pattern.replace('.', '?').replace('_', '?')
 
         return [fmt.format(pattern)]
 
