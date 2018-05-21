@@ -13,6 +13,9 @@ HOME = os.environ['HOME']
 NORSU_DIR = os.environ.get('NORSU_PATH') or os.path.join(HOME, 'pg')
 WORK_DIR = os.path.join(NORSU_DIR, '.norsu')
 
+if not os.path.exists(WORK_DIR):
+    os.makedirs(WORK_DIR)
+
 GIT_REPOS = [
     'git://git.postgresql.org/git/postgresql.git',
 ]
