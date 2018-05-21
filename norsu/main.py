@@ -174,7 +174,7 @@ class Instance:
             def to_key(x):
                 return GitRefVer(x)
 
-            step('No work dir, choosing the branch')
+            step('No work dir, choosing repo & branch')
 
             patterns = self.name.to_patterns()
 
@@ -328,7 +328,7 @@ def cmd_help(*_):
 
     print()
     print('Examples:')
-    print('\t{} install 9.6 10'.format(name))
+    print('\t{} install 9.6.5 10 master'.format(name))
     print('\t{} remove'.format(name))
 
 
