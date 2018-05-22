@@ -9,7 +9,7 @@ from shutil import rmtree
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
 from .sorting import GitRefVer
-from .style import Style
+from .terminal import Style
 
 
 def step(*args):
