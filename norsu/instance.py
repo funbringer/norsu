@@ -20,6 +20,19 @@ def step(*args):
     print(Style.green('\t=>'), *args)
 
 
+def sort_refs(refs, name):
+    # key function for sort
+    def to_key(x):
+        if name.type == InstanceNameType.Version:
+            return SortRefByVersion(x)
+        else:
+            # pre-calculated for better performance
+            name_ngram = SortRefBySimilarity.ngram(name.value)
+            return SortRefBySimilarity(x, name_ngram)
+
+    return sorted(refs, reverse=True, key=to_key)
+
+
 class InstanceNameType(Enum):
     Version = 1
     Branch = 2
@@ -30,7 +43,7 @@ class InstanceName:
     rx_sep = re.compile(r'(\.|_)')
 
     def __init__(self, name):
-        self.name = name
+        self.value = name
 
         if self.rx_is_ver.match(name):
             self.type = InstanceNameType.Version
@@ -38,7 +51,7 @@ class InstanceName:
             self.type = InstanceNameType.Branch
 
     def to_patterns(self):
-        pattern = self.name
+        pattern = self.value
         result = [pattern]
 
         if self.type == InstanceNameType.Version:
@@ -53,7 +66,7 @@ class InstanceName:
         return result
 
     def __str__(self):
-        return self.name
+        return self.value
 
 
 class Instance:
@@ -118,19 +131,8 @@ class Instance:
             if not refs:
                 raise Error('No branch found for {}'.format(self.name))
 
-            # key function for sort
-            def to_key(x):
-                if self.name.type == InstanceNameType.Version:
-                    return SortRefByVersion(x)
-                else:
-                    # pre-calculated for better performance
-                    patterns_ngrams = [
-                        SortRefBySimilarity.ngram(p) for p in patterns
-                    ]
-                    return SortRefBySimilarity(x, patterns_ngrams)
-
             # select the most relevant branch
-            ref = sorted(refs, reverse=True, key=to_key)[0]
+            ref = sort_refs(refs, self.name)[0]
             step('Selected repo', Style.bold(ref.repo))
             step('Selected branch', Style.bold(ref.name))
 

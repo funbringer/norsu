@@ -62,14 +62,11 @@ class SortRefBySimilarity:
     def similarity(ng1, ng2):
         return len(ng1 & ng2) / float(len(ng1 | ng2))
 
-    def __init__(self, ref, patterns_ngrams):
-        similarity = 0
+    def __init__(self, ref, name_ngram):
         ng1 = self.ngram(ref.name)
+        ng2 = name_ngram
 
-        for ng2 in patterns_ngrams:
-            similarity = max(similarity, self.similarity(ng1, ng2))
-
-        self.similarity = similarity
+        self.similarity = self.similarity(ng1, ng2)
         self.ref = ref
 
     def __eq__(self, other):
