@@ -26,6 +26,11 @@ def parse_args(args, dir=NORSU_DIR):
 def cmd_instance(cmd, args):
     entries, _ = parse_args(args)
 
+    # safety pin (see config)
+    if not args and cmd == 'remove' and \
+       CONFIG.commands.remove.require_args:
+        raise Error('By default, this command requires arguments')
+
     for entry in entries:
         print('Selected instance:', Style.bold(entry))
 

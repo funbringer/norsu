@@ -22,7 +22,7 @@ class Config:
             else:
                 raise KeyError('No such item: {}'.format(name))
         else:
-            raise TypeError('Not a dict')
+            raise TypeError('Not a dict: {}'.format(name))
 
     def __iter__(self):
         return self.items.__iter__()
@@ -38,6 +38,11 @@ def read_config():
                     'git://git.postgresql.org/git/postgresql.git',
                 ],
                 'first_match': True,
+            },
+            'commands': {
+                'remove': {
+                    'require_args': True,
+                }
             }
         }
 
