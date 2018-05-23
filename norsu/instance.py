@@ -43,6 +43,10 @@ class InstanceName:
     rx_sep = re.compile(r'(\.|_)')
 
     def __init__(self, name):
+        for s in ['/']:
+            if s in name:
+                raise Error('Wrong name {}'.format(name))
+
         self.value = name
 
         if self.rx_is_ver.match(name):

@@ -3,9 +3,10 @@ import sys
 
 from shutil import rmtree
 
-from .config import NORSU_DIR, WORK_DIR
+from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
-from .instance import Instance
+from .instance import Instance, InstanceName, sort_refs
+from .refs import find_relevant_refs
 from .terminal import Style
 
 
@@ -28,6 +29,27 @@ def cmd_instance(cmd, entries):
 
         # execute command
         cmds[cmd]()
+
+        print()
+
+
+def cmd_search(_, entries):
+    if not entries:
+        entries = (
+            e for e in os.listdir(NORSU_DIR)
+            if not e.startswith('.')
+        )
+
+    for entry in sorted(entries):
+        name = InstanceName(entry)
+        patterns = name.to_patterns()
+
+        print('Search query:', Style.bold(entry))
+
+        refs = find_relevant_refs(CONFIG.repos.urls, patterns)
+
+        for ref in sort_refs(refs, name):
+            print('\t', ref)
 
         print()
 
@@ -98,6 +120,7 @@ def main():
 METHODS = {
     'install': cmd_instance,
     'remove': cmd_instance,
+    'search': cmd_search,
     'purge': cmd_purge,
     'path': cmd_path,
     'help': cmd_help,
