@@ -20,6 +20,10 @@ def step(*args):
     print(Style.green('\t=>'), *args)
 
 
+def line(name, value=None):
+    print('\t', name, '\t{}'.format(value) if value else '')
+
+
 def sort_refs(refs, name):
     # key function for sort
     def to_key(x):
@@ -114,26 +118,34 @@ class Instance:
             return out.decode('utf-8')
 
     def status(self):
-        if os.path.exists(self.main_dir):
-            print('\t', 'Install dir:', Style.blue(self.main_dir))
+        postgres = os.path.join(self.main_dir, 'bin', 'postgres')
+
+        if os.path.exists(postgres):
+            status = Style.green('Installed')
         else:
-            print('\t', 'Not installed')
+            status = Style.red('Not installed')
+
+        line('Status:', status)
+
+        if os.path.exists(self.main_dir):
+            line('Main dir:', self.main_dir)
+        else:
+            line('Main dir:', 'none')
 
         if os.path.exists(self.work_dir):
-            print('\t', 'Work dir:', Style.blue(self.work_dir))
-
+            line('Work dir:', self.work_dir)
             branch = self.branch
             if branch:
-                print('\t', 'Branch:', Style.bold(branch))
+                line('Branch:', branch)
         else:
-            print('\t', 'No work dir')
+            line('Work dir:', 'none')
 
         pg_config_out = self.pg_config(['--version'])
         if pg_config_out:
-            print('\t', 'Version:', pg_config_out.strip())
+            line('Version:', pg_config_out.strip())
 
         configure = self._configure_options()
-        print('\t', 'CONFIGURE = {}'.format(configure))
+        line('CONFIGURE:', configure)
 
     def install(self):
         if not self.ignore:
