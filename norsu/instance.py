@@ -8,7 +8,7 @@ from shutil import rmtree
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
-from .sorting import GitRefVer
+from .refs import SortRefByVersion, find_relevant_refs
 from .style import Style
 
 
@@ -100,63 +100,39 @@ class Instance:
 
         if not os.path.exists(git_repo):
             def to_key(x):
-                return GitRefVer(x)
+                return SortRefByVersion(x)
 
             step('No work dir, choosing repo & branch')
 
             patterns = self.name.to_patterns()
+            refs = find_relevant_refs(CONFIG.repos.urls, patterns)
 
-            for repo in CONFIG.repos.urls:
-                args = ['git', 'ls-remote', '--heads', '--tags', repo]
-                args += patterns  # search patterns
+            if not refs:
+                raise Error('No branch found for {}'.format(self.name))
 
-                p = subprocess.Popen(args,
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.DEVNULL)
+            # select the most relevant branch
+            ref = sorted(refs, reverse=True, key=to_key)[0]
+            step('Selected repo', Style.bold(ref.repo))
+            step('Selected branch', Style.bold(ref.name))
 
-                out, _ = p.communicate()
+            args = [
+                'git',
+                'clone',
+                '--branch', ref.name,
+                '--depth', str(1),
+                ref.repo,
+                self.work_dir,
+            ]
 
-                if p.returncode != 0:
-                    raise Error('git ls-remote failed')
+            p = subprocess.Popen(args,
+                                 stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.STDOUT)
+            p.wait()
 
-                # list of matching branches and tags
-                refs = [
-                    os.path.basename(r.split()[-1])
-                    for r in out.decode('utf8').splitlines()
-                ]
+            if p.returncode != 0:
+                raise Error('git clone failed')
 
-                if not refs:
-                    continue
-
-                # select the most relevant branch
-                ref = sorted(refs, reverse=True, key=to_key)[0]
-                step('Selected repo', Style.bold(repo))
-                step('Selected branch', Style.bold(ref))
-
-                args = [
-                    'git',
-                    'clone',
-                    '--branch', str(ref),
-                    '--depth', str(1),
-                    repo,
-                    self.work_dir,
-                ]
-
-                p = subprocess.Popen(args,
-                                     stdout=subprocess.DEVNULL,
-                                     stderr=subprocess.STDOUT)
-                p.wait()
-
-                if p.returncode != 0:
-                    raise Error('git clone failed')
-
-                step('Cloned git repo to work dir')
-
-                # success
-                return
-
-            # no suitable branch found
-            raise Error('No branch found for {}'.format(self.name))
+            step('Cloned git repo to work dir')
 
     def _configure_project(self):
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
