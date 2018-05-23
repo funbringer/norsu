@@ -99,6 +99,20 @@ class Instance:
             if p.returncode == 0:
                 return out.decode('utf8').strip()
 
+    def pg_config(self, params=None):
+        pg_config = os.path.join(self.main_dir, 'bin', 'pg_config')
+
+        if os.path.exists(pg_config):
+            args = [pg_config] + params
+
+            p = subprocess.Popen(args,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.DEVNULL)
+
+            out, _ = p.communicate()
+
+            return out.decode('utf-8')
+
     def status(self):
         if os.path.exists(self.main_dir):
             print('\t', 'Install dir:', Style.blue(self.main_dir))
@@ -113,6 +127,10 @@ class Instance:
                 print('\t', 'Branch:', Style.bold(branch))
         else:
             print('\t', 'No work dir')
+
+        pg_config_out = self.pg_config(['--version'])
+        if pg_config_out:
+            print('\t', 'Version:', pg_config_out.strip())
 
         configure = self._configure_options()
         print('\t', 'CONFIGURE = {}'.format(configure))
@@ -135,26 +153,17 @@ class Instance:
         step('Removed all relevant directories')
 
     def _configure_options(self):
-        pg_config = os.path.join(self.main_dir, 'bin', 'pg_config')
         norsu_file = os.path.join(self.main_dir, '.norsu_configure')
 
         if os.path.exists(norsu_file):
             with open(norsu_file, 'r') as f:
                 return shlex.split(f.read())
 
-        elif os.path.exists(pg_config):
-            args = [pg_config, '--configure']
+        pg_config_out = self.pg_config(['--configure'])
+        if pg_config_out:
+            return shlex.split(pg_config_out)
 
-            p = subprocess.Popen(args,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.DEVNULL)
-
-            out, _ = p.communicate()
-
-            return shlex.split(out.decode('utf8'))
-
-        else:
-            return ['CFLAGS=-g3', '--enable-cassert']
+        return ['CFLAGS=-g3', '--enable-cassert']
 
     def _prepare_work_dir(self):
         git_repo = os.path.join(self.work_dir, '.git')
