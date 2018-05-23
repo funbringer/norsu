@@ -160,9 +160,13 @@ class Instance:
             step(Style.yellow('Ignored due to .norsu_ignore'))
 
     def remove(self):
-        rmtree(path=self.main_dir, ignore_errors=True)
-        rmtree(path=self.work_dir, ignore_errors=True)
-        step('Removed all relevant directories')
+        if os.path.exists(self.main_dir):
+            rmtree(path=self.main_dir, ignore_errors=True)
+            step('Removed main dir')
+
+        if os.path.exists(self.work_dir):
+            rmtree(path=self.work_dir, ignore_errors=True)
+            step('Removed work dir')
 
     def _configure_options(self):
         norsu_file = os.path.join(self.main_dir, '.norsu_configure')
