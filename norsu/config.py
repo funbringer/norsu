@@ -11,6 +11,21 @@ if not os.path.exists(WORK_DIR):
     os.makedirs(WORK_DIR)
 
 
+_DEFAULT_CONFIG = {
+    'repos': {
+        'urls': [
+            'git://git.postgresql.org/git/postgresql.git',
+        ],
+        'first_match': True,
+    },
+    'commands': {
+        'remove': {
+            'require_args': True,
+        }
+    }
+}
+
+
 class Config:
     def __init__(self, items):
         self.items = items
@@ -32,22 +47,8 @@ def read_config():
     cfg = os.path.join(NORSU_DIR, '.norsu.toml')
 
     if not os.path.exists(cfg):
-        config = {
-            'repos': {
-                'urls': [
-                    'git://git.postgresql.org/git/postgresql.git',
-                ],
-                'first_match': True,
-            },
-            'commands': {
-                'remove': {
-                    'require_args': True,
-                }
-            }
-        }
-
         with open(cfg, 'w') as f:
-            f.write(toml.dumps(config))
+            f.write(toml.dumps(_DEFAULT_CONFIG))
 
     with open(cfg, 'r') as f:
         return Config(toml.loads(f.read()))

@@ -161,7 +161,8 @@ class Instance:
 
         pg_config_out = self.pg_config(['--configure'])
         if pg_config_out:
-            return shlex.split(pg_config_out)
+            options = shlex.split(pg_config_out)
+            return [x for x in options if not x.startswith('--prefix')]
 
         return ['CFLAGS=-g3', '--enable-cassert']
 
