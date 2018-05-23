@@ -84,6 +84,39 @@ class Instance:
         ignore_file = os.path.join(self.main_dir, '.norsu_ignore')
         return os.path.exists(ignore_file)
 
+    @property
+    def branch(self):
+        args = ['git', 'symbolic-ref', '--short', 'HEAD']
+
+        if os.path.exists(self.work_dir):
+            p = subprocess.Popen(args,
+                                 cwd=self.work_dir,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.DEVNULL)
+
+            out, _ = p.communicate()
+
+            if p.returncode == 0:
+                return out.decode('utf8').strip()
+
+    def status(self):
+        if os.path.exists(self.main_dir):
+            print('\t', 'Install dir:', Style.blue(self.main_dir))
+        else:
+            print('\t', 'Not installed')
+
+        if os.path.exists(self.work_dir):
+            print('\t', 'Work dir:', Style.blue(self.work_dir))
+
+            branch = self.branch
+            if branch:
+                print('\t', 'Branch:', Style.bold(branch))
+        else:
+            print('\t', 'No work dir')
+
+        configure = self._configure_options()
+        print('\t', 'CONFIGURE = {}'.format(configure))
+
     def install(self):
         if not self.ignore:
             try:
@@ -113,7 +146,7 @@ class Instance:
             args = [pg_config, '--configure']
 
             p = subprocess.Popen(args,
-                                 stdout=subprocess.STDOUT,
+                                 stdout=subprocess.PIPE,
                                  stderr=subprocess.DEVNULL)
 
             out, _ = p.communicate()

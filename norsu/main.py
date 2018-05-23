@@ -10,14 +10,23 @@ from .refs import find_relevant_refs
 from .terminal import Style
 
 
-def cmd_instance(cmd, entries):
+def parse_args(args, dir=NORSU_DIR):
+    entries = args
+
     if not entries:
         entries = (
-            e for e in os.listdir(NORSU_DIR)
+            e for e in os.listdir(dir)
             if not e.startswith('.')
         )
 
-    for entry in sorted(entries):
+    # TODO: also return options
+    return (sorted(entries), None)
+
+
+def cmd_instance(cmd, args):
+    entries, _ = parse_args(args)
+
+    for entry in entries:
         print('Selected instance:', Style.bold(entry))
 
         instance = Instance(entry)
@@ -25,6 +34,7 @@ def cmd_instance(cmd, entries):
         cmds = {
             'install': lambda: instance.install(),
             'remove': lambda: instance.remove(),
+            'status': lambda: instance.status(),
         }
 
         # execute command
@@ -33,14 +43,10 @@ def cmd_instance(cmd, entries):
         print()
 
 
-def cmd_search(_, entries):
-    if not entries:
-        entries = (
-            e for e in os.listdir(NORSU_DIR)
-            if not e.startswith('.')
-        )
+def cmd_search(_, args):
+    entries, _ = parse_args(args)
 
-    for entry in sorted(entries):
+    for entry in entries:
         name = InstanceName(entry)
         patterns = name.to_patterns()
 
@@ -54,14 +60,10 @@ def cmd_search(_, entries):
         print()
 
 
-def cmd_purge(_, entries):
-    if not entries:
-        entries = (
-            e for e in os.listdir(WORK_DIR)
-            if not e.startswith('.')
-        )
+def cmd_purge(_, args):
+    entries, _ = parse_args(args, WORK_DIR)
 
-    for entry in sorted(entries):
+    for entry in entries:
         instance = os.path.join(NORSU_DIR, entry)
 
         if not os.path.exists(instance):
@@ -69,14 +71,10 @@ def cmd_purge(_, entries):
             rmtree(path=path, ignore_errors=True)
 
 
-def cmd_path(_, entries):
-    if not entries:
-        entries = (
-            e for e in os.listdir(NORSU_DIR)
-            if not e.startswith('.')
-        )
+def cmd_path(_, args):
+    entries, _ = parse_args(args, NORSU_DIR)
 
-    for entry in sorted(entries):
+    for entry in entries:
         print(os.path.join(NORSU_DIR, entry))
 
 
@@ -120,6 +118,7 @@ def main():
 METHODS = {
     'install': cmd_instance,
     'remove': cmd_instance,
+    'status': cmd_instance,
     'search': cmd_search,
     'purge': cmd_purge,
     'path': cmd_path,
