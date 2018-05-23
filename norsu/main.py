@@ -6,7 +6,7 @@ from shutil import rmtree
 from .config import NORSU_DIR, WORK_DIR
 from .exceptions import Error
 from .instance import Instance
-from .style import Style
+from .terminal import Style
 
 
 def cmd_instance(cmd, entries):
