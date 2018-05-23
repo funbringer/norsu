@@ -106,7 +106,7 @@ class Instance:
 
             patterns = self.name.to_patterns()
 
-            for repo in CONFIG['repos']:
+            for repo in CONFIG.repos.urls:
                 args = ['git', 'ls-remote', '--heads', '--tags', repo]
                 args += patterns  # search patterns
 
