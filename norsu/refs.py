@@ -51,10 +51,41 @@ class SortRefByVersion:
         return self.ref
 
 
+@total_ordering
+class SortRefBySimilarity:
+    @staticmethod
+    def ngram(text, N=3):
+        ngrams = (text[i:i+N] for i in range(0, len(text) - N + 1))
+        return set(ngrams)
+
+    @staticmethod
+    def similarity(ng1, ng2):
+        return len(ng1 & ng2) / float(len(ng1 | ng2))
+
+    def __init__(self, ref, patterns_ngrams):
+        similarity = 0
+        ng1 = self.ngram(ref.name)
+
+        for ng2 in patterns_ngrams:
+            similarity = max(similarity, self.similarity(ng1, ng2))
+
+        self.similarity = similarity
+        self.ref = ref
+
+    def __eq__(self, other):
+        return self.similarity == other.similarity
+
+    def __lt__(self, other):
+        return self.similarity < other.similarity
+
+
 class GitRef:
     def __init__(self, repo, name):
         self.repo = repo
         self.name = name
+
+    def __repr__(self):
+        return self.name
 
 
 def find_relevant_refs(repos, patterns):

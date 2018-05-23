@@ -8,8 +8,12 @@ from shutil import rmtree
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
-from .refs import SortRefByVersion, find_relevant_refs
 from .terminal import Style
+
+from .refs import \
+    SortRefByVersion, \
+    SortRefBySimilarity, \
+    find_relevant_refs
 
 
 def step(*args):
@@ -35,11 +39,18 @@ class InstanceName:
 
     def to_patterns(self):
         pattern = self.name
+        result = [pattern]
 
         if self.type == InstanceNameType.Version:
+            # replace version separators with a pattern
             pattern = self.rx_sep.sub(lambda m: '[._]', pattern)
 
-        return ['*{0}*'.format(pattern)]
+            for fmt in ['REL_{}*', 'REL{}*']:
+                result.append(fmt.format(pattern))
+        else:
+            result.append('*{}*'.format(pattern))
+
+        return result
 
     def __str__(self):
         return self.name
@@ -99,9 +110,6 @@ class Instance:
         git_repo = os.path.join(self.work_dir, '.git')
 
         if not os.path.exists(git_repo):
-            def to_key(x):
-                return SortRefByVersion(x)
-
             step('No work dir, choosing repo & branch')
 
             patterns = self.name.to_patterns()
@@ -109,6 +117,17 @@ class Instance:
 
             if not refs:
                 raise Error('No branch found for {}'.format(self.name))
+
+            # key function for sort
+            def to_key(x):
+                if self.name.type == InstanceNameType.Version:
+                    return SortRefByVersion(x)
+                else:
+                    # pre-calculated for better performance
+                    patterns_ngrams = [
+                        SortRefBySimilarity.ngram(p) for p in patterns
+                    ]
+                    return SortRefBySimilarity(x, patterns_ngrams)
 
             # select the most relevant branch
             ref = sorted(refs, reverse=True, key=to_key)[0]
