@@ -3,6 +3,7 @@ import subprocess
 
 from functools import total_ordering
 
+from .config import CONFIG
 from .exceptions import Error
 
 
@@ -57,6 +58,8 @@ class GitRef:
 
 
 def find_relevant_refs(repos, patterns):
+    refs = []
+
     for repo in repos:
         args = ['git', 'ls-remote', '--heads', '--tags', repo]
         args += patterns  # search patterns
@@ -71,9 +74,13 @@ def find_relevant_refs(repos, patterns):
             raise Error('git ls-remote failed')
 
         # list of matching branches and tags
-        refs = [
+        refs += [
             GitRef(repo, os.path.basename(r.split()[-1]))
             for r in out.decode('utf8').splitlines()
         ]
 
-        return refs
+        # should we stop after 1st match?
+        if refs and CONFIG.repos.first_match:
+            break
+
+    return refs
