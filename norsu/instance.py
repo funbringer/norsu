@@ -82,12 +82,18 @@ class Instance:
         self.name = InstanceName(name)
         self.main_dir = os.path.join(NORSU_DIR, name)
         self.work_dir = os.path.join(WORK_DIR, name)
-        self.commit_hash_file = os.path.join(self.main_dir, '.norsu_hash')
+
+        # various utility files
+        self.configure_file = os.path.join(self.main_dir, '.norsu_configure')
+        self.ignore_file = os.path.join(self.main_dir, '.norsu_ignore')
+
+        # store commit hashes (build + install)
+        self.installed_commit_file = os.path.join(self.main_dir, '.norsu_build')
+        self.built_commit_file = os.path.join(self.work_dir, '.norsu_build')
 
     @property
     def ignore(self):
-        ignore_file = os.path.join(self.main_dir, '.norsu_ignore')
-        return os.path.exists(ignore_file)
+        return os.path.exists(self.ignore_file)
 
     @property
     def actual_commit_hash(self):
@@ -97,18 +103,35 @@ class Instance:
 
     @property
     def installed_commit_hash(self):
-        if os.path.exists(self.commit_hash_file):
-            with open(self.commit_hash_file, 'r') as f:
+        if os.path.exists(self.installed_commit_file):
+            with open(self.installed_commit_file, 'r') as f:
                 return f.read().strip()
-
-    @property
-    def fresh_commit(self):
-        return self.installed_commit_hash == self.actual_commit_hash
 
     @installed_commit_hash.setter
     def installed_commit_hash(self, value):
-        with open(self.commit_hash_file, 'w') as f:
+        with open(self.installed_commit_file, 'w') as f:
             f.write(value)
+
+    @property
+    def built_commit_hash(self):
+        if os.path.exists(self.built_commit_file):
+            with open(self.built_commit_file, 'r') as f:
+                return f.read().strip()
+
+    @built_commit_hash.setter
+    def built_commit_hash(self, value):
+        with open(self.built_commit_file, 'w') as f:
+            f.write(value)
+
+    @property
+    def requires_reinstall(self):
+        # NOTE: remember that re-build != from re-install!
+        # We might already have a fresh build in work dir
+        return self.installed_commit_hash != self.actual_commit_hash
+
+    @property
+    def requires_rebuild(self):
+        return self.built_commit_hash != self.actual_commit_hash
 
     @property
     def branch(self):
@@ -135,10 +158,10 @@ class Instance:
         postgres = os.path.join(self.main_dir, 'bin', 'postgres')
 
         if os.path.exists(postgres):
-            if self.fresh_commit:
-                status = Style.green('Installed')
-            else:
+            if self.requires_reinstall:
                 status = Style.yellow('Installed (out of date)')
+            else:
+                status = Style.green('Installed')
         else:
             status = Style.red('Not installed')
 
@@ -193,10 +216,8 @@ class Instance:
             step('Removed work dir')
 
     def _configure_options(self):
-        norsu_file = os.path.join(self.main_dir, '.norsu_configure')
-
-        if os.path.exists(norsu_file):
-            with open(norsu_file, 'r') as f:
+        if os.path.exists(self.configure_file):
+            with open(self.configure_file, 'r') as f:
                 return shlex.split(f.read())
 
         pg_config_out = self.pg_config(['--configure'])
@@ -216,7 +237,7 @@ class Instance:
                 args = ['git', 'pull', 'origin', branch]
                 execute(args, cwd=self.work_dir, output=False)
 
-                if not self.fresh_commit:
+                if self.requires_reinstall:
                     step('Installed build is out of date')
         else:
             step('No work dir, choosing repo & branch')
@@ -244,6 +265,14 @@ class Instance:
             execute(args, output=False)
             step('Cloned git repo to work dir')
 
+        # add .norsu* to git excludes
+        excludes = os.path.join(self.work_dir, '.git', 'info', 'exclude')
+        with open(excludes, 'r+') as f:
+            lines = f.readlines()
+            if not any('.norsu*' in s for s in lines):
+                f.seek(0, os.SEEK_END)
+                f.write('.norsu*')
+
     def _configure_project(self):
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
         if not os.path.exists(makefile):
@@ -256,7 +285,10 @@ class Instance:
             step('Configured sources')
 
     def _make_install(self):
-        if not self.fresh_commit:
+        if self.requires_reinstall:
+            # update built commit hash
+            self.built_commit_hash = self.actual_commit_hash
+
             jobs = int(CONFIG['build']['jobs'])
             for args in [['make', '-j{}'.format(jobs)], ['make', 'install']]:
                 execute(args, cwd=self.work_dir, output=False)
@@ -267,7 +299,8 @@ class Instance:
             step('Built and installed to', Style.blue(self.main_dir))
 
     def _make_distclean(self):
-        if os.path.exists(self.work_dir) and not self.fresh_commit:
+        makefile = os.path.join(self.work_dir, 'GNUmakefile')
+        if os.path.exists(makefile) and self.requires_rebuild:
             args = ['make', 'distclean']
             execute(args, cwd=self.work_dir, output=False, error=False)
 
