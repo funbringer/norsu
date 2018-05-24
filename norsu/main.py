@@ -40,6 +40,7 @@ def cmd_instance(cmd, args):
             'install': lambda: instance.install(),
             'remove': lambda: instance.remove(),
             'status': lambda: instance.status(),
+            'pull': lambda: instance.pull(),
         }
 
         # execute command
@@ -98,7 +99,9 @@ def cmd_help(*_):
     print()
     print('Examples:')
     print('\t{} install 9.6.5 10 master'.format(name))
-    print('\t{} remove'.format(name))
+    print('\t{} pull REL_10_STABLE'.format(name))
+    print('\t{} remove 9.5'.format(name))
+    print('\t{} status'.format(name))
 
 
 def main():
@@ -124,6 +127,7 @@ METHODS = {
     'install': cmd_instance,
     'remove': cmd_instance,
     'status': cmd_instance,
+    'pull': cmd_instance,
     'search': cmd_search,
     'purge': cmd_purge,
     'path': cmd_path,
