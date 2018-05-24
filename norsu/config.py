@@ -11,6 +11,8 @@ def merge_config(current, new):
                 raise Error('Unknown option: {}'.format(k))
 
             if not merge_config(current[k], new[k]):
+                if type(current[k]) != type(v):
+                    raise Error('Wrong type of option: {}'.format(k))
                 current[k] = v
 
         return True
