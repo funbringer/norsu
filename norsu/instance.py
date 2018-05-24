@@ -269,6 +269,6 @@ class Instance:
     def _make_distclean(self):
         if os.path.exists(self.work_dir) and not self.fresh_commit:
             args = ['make', 'distclean']
-            execute(args, cwd=self.work_dir, output=False)
+            execute(args, cwd=self.work_dir, output=False, error=False)
 
             step('Prepared work dir for a new build')
