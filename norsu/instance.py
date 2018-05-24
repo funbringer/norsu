@@ -1,6 +1,5 @@
 import os
 import re
-import subprocess
 import shlex
 
 from enum import Enum
@@ -9,6 +8,7 @@ from shutil import rmtree
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
 from .terminal import Style
+from .utils import execute
 
 from .refs import \
     SortRefByVersion, \
@@ -90,32 +90,24 @@ class Instance:
 
     @property
     def branch(self):
-        args = ['git', 'symbolic-ref', '--short', 'HEAD']
-
         if os.path.exists(self.work_dir):
-            p = subprocess.Popen(args,
-                                 cwd=self.work_dir,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.DEVNULL)
+            args = ['git', 'symbolic-ref', '--short', 'HEAD']
+            out = execute(args, cwd=self.work_dir, error=False)
+            if out:
+                return out.strip()
 
-            out, _ = p.communicate()
-
-            if p.returncode == 0:
-                return out.decode('utf8').strip()
+    @property
+    def tag(self):
+        if os.path.exists(self.work_dir):
+            args = ['git', 'tag', '--points-at', 'HEAD']
+            out = execute(args, cwd=self.work_dir, error=False)
+            if out:
+                return out.strip()
 
     def pg_config(self, params=None):
         pg_config = os.path.join(self.main_dir, 'bin', 'pg_config')
-
         if os.path.exists(pg_config):
-            args = [pg_config] + params
-
-            p = subprocess.Popen(args,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.DEVNULL)
-
-            out, _ = p.communicate()
-
-            return out.decode('utf-8')
+            return execute([pg_config] + params)
 
     def status(self):
         postgres = os.path.join(self.main_dir, 'bin', 'postgres')
@@ -134,7 +126,7 @@ class Instance:
 
         if os.path.exists(self.work_dir):
             line('Work dir:', self.work_dir)
-            branch = self.branch
+            branch = self.branch or self.tag
             if branch:
                 line('Branch:', branch)
         else:
@@ -208,14 +200,7 @@ class Instance:
                 self.work_dir,
             ]
 
-            p = subprocess.Popen(args,
-                                 stdout=subprocess.DEVNULL,
-                                 stderr=subprocess.STDOUT)
-            p.wait()
-
-            if p.returncode != 0:
-                raise Error('git clone failed')
-
+            execute(args, output=False)
             step('Cloned git repo to work dir')
 
     def _configure_project(self):
@@ -226,28 +211,13 @@ class Instance:
                 '--prefix={}'.format(self.main_dir)
             ] + self._configure_options()
 
-            p = subprocess.Popen(args,
-                                 cwd=self.work_dir,
-                                 stdout=subprocess.DEVNULL,
-                                 stderr=subprocess.STDOUT)
-            p.wait()
-
-            if p.returncode != 0:
-                raise Error('configure failed')
-
+            execute(args, cwd=self.work_dir, output=False)
             step('Configured sources')
 
     def _make_install(self):
         postgres = os.path.join(self.main_dir, 'bin', 'postgres')
         if not os.path.exists(postgres):
             for args in [['make', '-j4'], ['make', 'install']]:
-                p = subprocess.Popen(args,
-                                     cwd=self.work_dir,
-                                     stdout=subprocess.DEVNULL,
-                                     stderr=subprocess.STDOUT)
-                p.wait()
-
-                if p.returncode != 0:
-                    raise Error('{} failed'.format(' '.join(args)))
+                execute(args, cwd=self.work_dir, output=False)
 
             step('Built and installed to', Style.blue(self.main_dir))

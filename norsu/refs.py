@@ -1,10 +1,9 @@
 import os
-import subprocess
 
 from functools import total_ordering
 
 from .config import CONFIG
-from .exceptions import Error
+from .utils import execute
 
 
 @total_ordering
@@ -92,19 +91,12 @@ def find_relevant_refs(repos, patterns):
         args = ['git', 'ls-remote', '--heads', '--tags', repo]
         args += patterns  # search patterns
 
-        p = subprocess.Popen(args,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.DEVNULL)
-
-        out, _ = p.communicate()
-
-        if p.returncode != 0:
-            raise Error('git ls-remote failed')
+        out = execute(args)
 
         # list of matching branches and tags
         refs += [
             GitRef(repo, os.path.basename(r.split()[-1]))
-            for r in out.decode('utf8').splitlines()
+            for r in out.splitlines()
         ]
 
         # should we stop after 1st match?
