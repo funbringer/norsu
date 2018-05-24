@@ -28,7 +28,7 @@ def cmd_instance(cmd, args):
 
     # safety pin (see config)
     if not args and cmd == 'remove' and \
-       CONFIG.commands.remove.require_args:
+       CONFIG['commands']['remove']['require_args']:
         raise Error('By default, this command requires arguments')
 
     for entry in entries:
@@ -57,7 +57,7 @@ def cmd_search(_, args):
 
         print('Search query:', Style.bold(entry))
 
-        refs = find_relevant_refs(CONFIG.repos.urls, patterns)
+        refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
 
         for ref in sort_refs(refs, name):
             print('\t', ref)

@@ -100,7 +100,7 @@ def find_relevant_refs(repos, patterns):
         ]
 
         # should we stop after 1st match?
-        if refs and CONFIG.repos.first_match:
+        if refs and CONFIG['repos']['first_match']:
             break
 
     return refs

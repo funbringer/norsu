@@ -172,7 +172,7 @@ class Instance:
             options = shlex.split(pg_config_out)
             return [x for x in options if not x.startswith('--prefix')]
 
-        return ['CFLAGS=-g3', '--enable-cassert']
+        return CONFIG['build']['configure_options']
 
     def _prepare_work_dir(self):
         git_repo = os.path.join(self.work_dir, '.git')
@@ -181,7 +181,7 @@ class Instance:
             step('No work dir, choosing repo & branch')
 
             patterns = self.name.to_patterns()
-            refs = find_relevant_refs(CONFIG.repos.urls, patterns)
+            refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
 
             if not refs:
                 raise Error('No branch found for {}'.format(self.name))
@@ -217,7 +217,8 @@ class Instance:
     def _make_install(self):
         postgres = os.path.join(self.main_dir, 'bin', 'postgres')
         if not os.path.exists(postgres):
-            for args in [['make', '-j4'], ['make', 'install']]:
+            jobs = int(CONFIG['build']['jobs'])
+            for args in [['make', '-j{}'.format(jobs)], ['make', 'install']]:
                 execute(args, cwd=self.work_dir, output=False)
 
             step('Built and installed to', Style.blue(self.main_dir))

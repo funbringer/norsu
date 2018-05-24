@@ -1,6 +1,22 @@
 import os
 import toml
 
+from .exceptions import Error
+
+
+def merge_config(current, new):
+    if isinstance(current, dict):
+        for k, v in new.items():
+            if k not in current:
+                raise Error('Unknown option: {}'.format(k))
+
+            if not merge_config(current[k], new[k]):
+                current[k] = v
+
+        return True
+
+    return False
+
 
 # select default dir
 HOME = os.environ['HOME']
@@ -11,7 +27,7 @@ if not os.path.exists(WORK_DIR):
     os.makedirs(WORK_DIR)
 
 
-_DEFAULT_CONFIG = {
+CONFIG = {
     'repos': {
         'urls': [
             'git://git.postgresql.org/git/postgresql.git',
@@ -22,36 +38,22 @@ _DEFAULT_CONFIG = {
         'remove': {
             'require_args': True,
         }
+    },
+    'build': {
+        'configure_options': ['CFLAGS=-g3', '--enable-cassert'],
+        'jobs': 1,
     }
 }
 
+cfg = os.path.join(NORSU_DIR, '.norsu.toml')
 
-class Config:
-    def __init__(self, items):
-        self.items = items
-
-    def __getattr__(self, name):
-        if isinstance(self.items, dict):
-            if name in self.items:
-                return Config(self.items[name])
-            else:
-                raise KeyError('No such item: {}'.format(name))
-        else:
-            raise TypeError('Not a dict: {}'.format(name))
-
-    def __iter__(self):
-        return self.items.__iter__()
-
-
-def read_config():
-    cfg = os.path.join(NORSU_DIR, '.norsu.toml')
-
-    if not os.path.exists(cfg):
-        with open(cfg, 'w') as f:
-            f.write(toml.dumps(_DEFAULT_CONFIG))
-
+if not os.path.exists(cfg):
+    with open(cfg, 'w') as f:
+        f.write(toml.dumps(CONFIG))
+else:
     with open(cfg, 'r') as f:
-        return Config(toml.loads(f.read()))
-
-
-CONFIG = read_config()
+        try:
+            merge_config(CONFIG, toml.loads(f.read()))
+        except Error as e:
+            print(str(e))
+            exit(1)
