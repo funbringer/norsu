@@ -42,6 +42,9 @@ CONFIG = {
     'build': {
         'configure_options': ['CFLAGS=-g3', '--enable-cassert'],
         'jobs': 1,
+    },
+    'misc': {
+        'colors': True
     }
 }
 

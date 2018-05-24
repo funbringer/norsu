@@ -1,6 +1,11 @@
+from .config import CONFIG
+
+
 class Style:
     def style(color, text):
-        return '\033[{}m{}\033[0m'.format(color, text)
+        if CONFIG['misc']['colors']:
+            return '\033[{}m{}\033[0m'.format(color, text)
+        return text
 
     def bold(text): return Style.style(1, text)
 
