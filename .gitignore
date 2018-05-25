@@ -12,8 +12,6 @@ venv/
 .coverage
 coverage.xml
 
-Dockerfile
-
 *~
 *.swp
 tags
