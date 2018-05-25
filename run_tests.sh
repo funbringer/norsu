@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 
-virtualenv --python=python3 /tmp/venv
-source /tmp/venv/bin/activate
+set -eux
+
+PYTHON_VENV=/tmp/venv
+
+virtualenv --python=python3 $PYTHON_VENV
+export VIRTUAL_ENV_DISABLE_PROMPT=1
+source $PYTHON_VENV/bin/activate
+
+pip install flake8
+
+# check code style
+flake8 .
 
 # install package
 pip install -U .
@@ -9,11 +19,7 @@ pip install -U .
 # run tests
 ./tester.sh
 
-if [ -f regression.diffs ]; then
-	echo
-	echo "========"
-	echo " Diffs:"
-	echo "========"
-	echo
-	cat regression.diffs
-fi
+deactivate
+rm -rf $PYTHON_VENV
+
+set +eux
