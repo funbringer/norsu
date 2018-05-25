@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-install_requires=['toml']
+install_requires = ['toml']
 
 setup(
     name='norsu',

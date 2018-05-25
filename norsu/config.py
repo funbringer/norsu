@@ -46,7 +46,7 @@ CONFIG = {
         'jobs': 1,
     },
     'misc': {
-        'colors': True
+        'colors': True,
     }
 }
 
