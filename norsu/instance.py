@@ -296,7 +296,7 @@ class Instance:
             # update installed commit hash
             self.installed_commit_hash = self.actual_commit_hash
 
-            step('Built and installed to', Style.blue(self.main_dir))
+            step('Built and installed')
 
     def _make_distclean(self):
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
