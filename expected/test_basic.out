@@ -1,0 +1,29 @@
+
+export NORSU_PATH=$PWD/pg
+
+# install instance
+norsu install master
+Selected instance: master
+	=> No work dir, choosing repo & branch
+	=> Selected repo git://git.postgresql.org/git/postgresql.git
+	=> Selected branch master
+	=> Cloned git repo to work dir
+	=> Configured sources
+	=> Built and installed
+
+
+# show configure flags
+$(norsu path master)/bin/pg_config > /dev/null
+
+# useless purge
+norsu purge master
+
+# remove instance
+norsu remove master
+Selected instance: master
+	=> Removed main dir
+	=> Removed work dir
+
+
+# remove dir
+rm -rf $NORSU_PATH

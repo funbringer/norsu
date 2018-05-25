@@ -17,3 +17,7 @@ Dockerfile
 *~
 *.swp
 tags
+
+pg
+results
+regression.diffs
