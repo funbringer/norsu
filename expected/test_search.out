@@ -1,0 +1,41 @@
+
+export NORSU_PATH=$PWD/pg
+
+# search for an old release
+norsu search 9.2
+Search query: 9.2
+	 REL9_2_STABLE
+	 REL9_2_24
+	 REL9_2_23
+	 REL9_2_22
+	 REL9_2_21
+	 REL9_2_20
+	 REL9_2_19
+	 REL9_2_18
+	 REL9_2_17
+	 REL9_2_16
+	 REL9_2_15
+	 REL9_2_14
+	 REL9_2_13
+	 REL9_2_12
+	 REL9_2_11
+	 REL9_2_10
+	 REL9_2_9
+	 REL9_2_8
+	 REL9_2_7
+	 REL9_2_6
+	 REL9_2_5
+	 REL9_2_4
+	 REL9_2_3
+	 REL9_2_2
+	 REL9_2_1
+	 REL9_2_0
+	 REL9_2_RC1
+	 REL9_2_BETA4
+	 REL9_2_BETA3
+	 REL9_2_BETA2
+	 REL9_2_BETA1
+
+
+# remove dir
+rm -rf $NORSU_PATH
