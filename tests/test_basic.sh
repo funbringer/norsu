@@ -1,18 +1,21 @@
 set -v
 
-export NORSU_PATH=$PWD/pg
+export NORSU_PATH="$PWD/pg"
 
 # install instance
 norsu install master
 
 # show configure flags
-$(norsu path master)/bin/pg_config > /dev/null
+"$(norsu path master)/bin/pg_config" > /dev/null
 
-# useless purge
-norsu purge master
+# remove only installation
+rm -rf "$(norsu path master)"
+
+# quick reinstall
+norsu install master
 
 # remove instance
 norsu remove master
 
 # remove dir
-rm -rf $NORSU_PATH
+rm -rf "$NORSU_PATH"

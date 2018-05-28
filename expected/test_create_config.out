@@ -1,19 +1,19 @@
 
-export NORSU_PATH=$PWD/pg
+export NORSU_PATH="$PWD/pg"
 
 # run with default options
 norsu
 
 # check files
-if [ -e $NORSU_PATH ]; then echo OK; fi
+if [ -e "$NORSU_PATH" ]; then echo OK; fi
 OK
-if [ -e $NORSU_PATH/.norsu ]; then echo OK; fi
+if [ -e "$NORSU_PATH/.norsu" ]; then echo OK; fi
 OK
-if [ -e $NORSU_PATH/.norsu.toml ]; then echo OK; fi
+if [ -e "$NORSU_PATH/.norsu.toml" ]; then echo OK; fi
 OK
 
 # check default config
-cat $NORSU_PATH/.norsu.toml
+cat "$NORSU_PATH/.norsu.toml"
 [repos]
 urls = [ "git://git.postgresql.org/git/postgresql.git",]
 first_match = true
@@ -29,4 +29,4 @@ colors = true
 require_args = true
 
 # remove dir
-rm -rf $NORSU_PATH
+rm -rf "$NORSU_PATH"

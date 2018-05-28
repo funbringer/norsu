@@ -61,7 +61,7 @@ def cmd_search(_, args):
         refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
 
         for ref in sort_refs(refs, name):
-            print('\t', ref)
+            print('\t', ref.name)
 
         print()
 

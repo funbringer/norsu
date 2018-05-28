@@ -40,7 +40,7 @@ echo
 printf $YELLOW"===== Tests: ====="$RESET"\n"
 echo
 
-for t in $TEST_DIR/tests/*; do
+for t in "$TEST_DIR"/tests/*; do
 	NAME="$(basename $t)"
 	OUT="${NAME%.*}.out"
 

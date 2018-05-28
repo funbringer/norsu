@@ -1,0 +1,25 @@
+
+export NORSU_PATH="$PWD/pg"
+
+# pull master
+norsu pull master
+Selected instance: master
+	=> No work dir, choosing repo & branch
+	=> Selected repo git://git.postgresql.org/git/postgresql.git
+	=> Selected branch master
+	=> Cloned git repo to work dir
+
+
+# check that dir exists
+if [ -e "$NORSU_PATH/.norsu/master" ]; then echo OK; fi
+OK
+
+# purge master
+norsu purge master
+
+# check that dir has been removed
+if [ ! -e "$NORSU_PATH/.norsu/master" ]; then echo OK; fi
+OK
+
+# remove dir
+rm -rf "$NORSU_PATH"
