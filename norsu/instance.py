@@ -239,25 +239,29 @@ class Instance:
                 args = ['git', 'pull', 'origin', branch]
                 execute(args, cwd=self.work_dir, output=False)
 
-                # currently installed to main dir
-                installed_commit = self.installed_commit_hash
+                if self.requires_reinstall:
+                    fresh_commits = ''
 
-                # current HEAD != installed commit
-                if branch != installed_commit:
-                    args = [
-                        'git',
-                        'rev-list',
-                        '{}..{}'.format(installed_commit, branch),
-                        '--count',
-                    ]
+                    # currently installed to main dir
+                    installed_commit = self.installed_commit_hash
 
-                    try:
-                        cnt = execute(args, cwd=self.work_dir).strip()
-                        commits = '({} commits)'.format(int(cnt))
-                    except ValueError:
-                        commits = ''
+                    # we have an old installation
+                    if installed_commit:
+                        args = [
+                            'git',
+                            'rev-list',
+                            '{}..{}'.format(installed_commit, branch),
+                            '--count',
+                        ]
 
-                    step('Installed build is out of date {}'.format(commits))
+                        try:
+                            cnt = execute(args, cwd=self.work_dir).strip()
+                            fresh_commits = ' ({} commits)'.format(int(cnt))
+                        except ValueError:
+                            pass
+
+                    step('Current branch:', Style.bold(branch))
+                    step('Installed build is out of date{}'.format(fresh_commits))
         else:
             step('No work dir, choosing repo & branch')
 
