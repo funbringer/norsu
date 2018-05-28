@@ -24,6 +24,17 @@ def line(name, value=None):
     print('\t', name, '\t{}'.format(value) if value is not None else '')
 
 
+def read_commit_file(path):
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            return f.read().strip()
+
+
+def write_commit_file(path, value):
+    with open(path, 'w') as f:
+        f.write(value)
+
+
 def sort_refs(refs, name):
     # key function for sort
     def to_key(x):
@@ -103,29 +114,23 @@ class Instance:
 
     @property
     def installed_commit_hash(self):
-        if os.path.exists(self.installed_commit_file):
-            with open(self.installed_commit_file, 'r') as f:
-                return f.read().strip()
+        return read_commit_file(self.installed_commit_file)
 
     @installed_commit_hash.setter
     def installed_commit_hash(self, value):
-        with open(self.installed_commit_file, 'w') as f:
-            f.write(value)
+        write_commit_file(self.installed_commit_file, value)
 
     @property
     def built_commit_hash(self):
-        if os.path.exists(self.built_commit_file):
-            with open(self.built_commit_file, 'r') as f:
-                return f.read().strip()
+        return read_commit_file(self.built_commit_file)
 
     @built_commit_hash.setter
     def built_commit_hash(self, value):
-        with open(self.built_commit_file, 'w') as f:
-            f.write(value)
+        write_commit_file(self.built_commit_file, value)
 
     @property
     def requires_reinstall(self):
-        # NOTE: remember that re-build != from re-install!
+        # NOTE: remember that re-build != re-install!
         # We might already have a fresh build in work dir
         return self.installed_commit_hash != self.actual_commit_hash
 
@@ -207,13 +212,10 @@ class Instance:
             step(Style.yellow('Ignored due to .norsu_ignore'))
 
     def remove(self):
-        if os.path.exists(self.main_dir):
-            rmtree(path=self.main_dir, ignore_errors=True)
-            step('Removed main dir')
-
-        if os.path.exists(self.work_dir):
-            rmtree(path=self.work_dir, ignore_errors=True)
-            step('Removed work dir')
+        for path, name in [(self.main_dir, 'main'), (self.work_dir, 'work')]:
+            if os.path.exists(path):
+                rmtree(path=path, ignore_errors=True)
+                step('Removed {} dir'.format(name))
 
     def _configure_options(self):
         if os.path.exists(self.configure_file):
@@ -237,8 +239,25 @@ class Instance:
                 args = ['git', 'pull', 'origin', branch]
                 execute(args, cwd=self.work_dir, output=False)
 
-                if self.requires_reinstall:
-                    step('Installed build is out of date')
+                # currently installed to main dir
+                installed_commit = self.installed_commit_hash
+
+                # current HEAD != installed commit
+                if branch != installed_commit:
+                    args = [
+                        'git',
+                        'rev-list',
+                        '{}..{}'.format(installed_commit, branch),
+                        '--count',
+                    ]
+
+                    try:
+                        cnt = execute(args, cwd=self.work_dir).strip()
+                        commits = '({} commits)'.format(int(cnt))
+                    except ValueError:
+                        commits = ''
+
+                    step('Installed build is out of date {}'.format(commits))
         else:
             step('No work dir, choosing repo & branch')
 
