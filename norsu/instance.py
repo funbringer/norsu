@@ -10,7 +10,8 @@ from .exceptions import Error
 from .terminal import Style
 from .utils import execute
 
-from .refs import \
+from .git import \
+    GitRepo, \
     SortRefByVersion, \
     SortRefBySimilarity, \
     find_relevant_refs
@@ -93,6 +94,7 @@ class Instance:
         self.name = InstanceName(name)
         self.main_dir = os.path.join(NORSU_DIR, name)
         self.work_dir = os.path.join(WORK_DIR, name)
+        self.git = GitRepo(work_dir=self.work_dir)
 
         # various utility files
         self.configure_file = os.path.join(self.main_dir, '.norsu_configure')
@@ -109,8 +111,7 @@ class Instance:
     @property
     def actual_commit_hash(self):
         if os.path.exists(self.work_dir):
-            args = ['git', 'rev-parse', 'HEAD']
-            return execute(args, cwd=self.work_dir).strip()
+            return self.git.hash
 
     @property
     def installed_commit_hash(self):
@@ -138,22 +139,6 @@ class Instance:
     def requires_rebuild(self):
         return self.built_commit_hash != self.actual_commit_hash
 
-    @property
-    def branch(self):
-        if os.path.exists(self.work_dir):
-            args = ['git', 'symbolic-ref', '--short', 'HEAD']
-            out = execute(args, cwd=self.work_dir, error=False)
-            if out:
-                return out.strip()
-
-    @property
-    def tag(self):
-        if os.path.exists(self.work_dir):
-            args = ['git', 'tag', '--points-at', 'HEAD']
-            out = execute(args, cwd=self.work_dir, error=False)
-            if out:
-                return out.strip()
-
     def pg_config(self, params=None):
         pg_config = os.path.join(self.main_dir, 'bin', 'pg_config')
         if os.path.exists(pg_config):
@@ -179,7 +164,7 @@ class Instance:
 
         if os.path.exists(self.work_dir):
             line('Work dir:', self.work_dir)
-            branch = self.branch or self.tag
+            branch = self.git.branch or self.git.tag
             if branch:
                 line('Branch:', branch)
         else:
@@ -233,35 +218,24 @@ class Instance:
         git_repo = os.path.join(self.work_dir, '.git')
 
         if os.path.exists(git_repo):
-            branch = self.branch
+            branch = self.git.branch
 
+            # pull latest changes
             if branch:
-                args = ['git', 'pull', 'origin', branch]
-                execute(args, cwd=self.work_dir, output=False)
+                self.git.pull()
 
-                if self.requires_reinstall:
-                    fresh_commits = ''
+            # should we reinstall PG?
+            if self.requires_reinstall:
+                fresh_commits = ''
 
-                    # currently installed to main dir
-                    installed_commit = self.installed_commit_hash
+                # show distance between installed and fresh commits
+                installed_commit = self.installed_commit_hash
+                if installed_commit:
+                    commits = self.git.distance(installed_commit, branch)
+                    fresh_commits = ' ({} commits)'.format(commits)
 
-                    # we have an old installation
-                    if installed_commit:
-                        args = [
-                            'git',
-                            'rev-list',
-                            '{}..{}'.format(installed_commit, branch),
-                            '--count',
-                        ]
-
-                        try:
-                            cnt = execute(args, cwd=self.work_dir).strip()
-                            fresh_commits = ' ({} commits)'.format(int(cnt))
-                        except ValueError:
-                            pass
-
-                    step('Current branch:', Style.bold(branch))
-                    step('Installed build is out of date{}'.format(fresh_commits))
+                step('Current branch:', Style.bold(branch))
+                step('Installed build is out of date{}'.format(fresh_commits))
         else:
             step('No work dir, choosing repo & branch')
 
@@ -276,16 +250,8 @@ class Instance:
             step('Selected repo', Style.bold(ref.repo))
             step('Selected branch', Style.bold(ref.name))
 
-            args = [
-                'git',
-                'clone',
-                '--branch', ref.name,
-                '--depth', str(1),
-                ref.repo,
-                self.work_dir,
-            ]
-
-            execute(args, output=False)
+            # finally, clone repo
+            self.git.clone(url=ref.repo, branch=ref.name)
             step('Cloned git repo to work dir')
 
         # add .norsu* to git excludes

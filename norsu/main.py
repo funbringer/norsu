@@ -5,8 +5,8 @@ from shutil import rmtree
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
+from .git import find_relevant_refs
 from .instance import Instance, InstanceName, sort_refs
-from .refs import find_relevant_refs
 from .terminal import Style
 
 

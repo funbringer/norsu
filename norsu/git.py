@@ -80,8 +80,59 @@ class GitRef:
         self.repo = repo
         self.name = name
 
-    def __repr__(self):
-        return self.name
+
+class GitRepo:
+    def __init__(self, work_dir, url=None):
+        self.work_dir = work_dir
+        self.url = url
+
+    @property
+    def branch(self):
+        args = ['git', 'symbolic-ref', '--short', 'HEAD']
+        out = execute(args, cwd=self.work_dir, error=False)
+        if out:
+            return out.strip()
+
+    @property
+    def tag(self):
+        args = ['git', 'tag', '--points-at', 'HEAD']
+        out = execute(args, cwd=self.work_dir, error=False)
+        if out:
+            return out.strip()
+
+    @property
+    def hash(self):
+        args = ['git', 'rev-parse', 'HEAD']
+        return execute(args, cwd=self.work_dir).strip()
+
+    def clone(self, url=None, branch='master', depth=1):
+        args = [
+            'git',
+            'clone',
+            '--branch', branch,
+            '--depth', str(depth),
+            url or self.url,
+            self.work_dir,
+        ]
+        execute(args, output=False)
+
+    def pull(self, remote='origin', branch=None):
+        args = ['git', 'pull', remote, branch or self.branch]
+        execute(args, cwd=self.work_dir, output=False)
+
+    def distance(self, commit1, commit2):
+        args = [
+            'git',
+            'rev-list',
+            '{}..{}'.format(commit1, commit2),
+            '--count',
+        ]
+
+        try:
+            # mute possible cast errors
+            return int(execute(args, cwd=self.work_dir).strip())
+        except ValueError:
+            pass
 
 
 def find_relevant_refs(repos, patterns):
