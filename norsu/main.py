@@ -1,8 +1,8 @@
 import os
+import subprocess
 import sys
 
 from shutil import rmtree
-from subprocess import check_call
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
@@ -12,17 +12,30 @@ from .terminal import Style
 from .utils import partition
 
 
-def extract_entries(args, dir=None):
+def extract_instances(args, dir):
+    entries, options = extract_entries(args)
+
+    entries_pos, entries_neg = partition(lambda x: x.startswith('^'), entries)
+
+    entries_pos = list(entries_pos)
+    entries_neg = [e[1:] for e in entries_neg]  # remove caps
+
+    if not entries_pos:
+        entries_pos = sorted([
+            e for e in os.listdir(dir)
+            if not e.startswith('.')
+        ])
+
+    entries = [e for e in entries_pos if e not in entries_neg]
+
+    return (entries, options)
+
+
+def extract_entries(args):
     entries, options = partition(lambda x: x.startswith('-'), args)
 
     entries = list(entries)
     options = list(options)
-
-    if not entries and dir:
-        entries = sorted([
-            e for e in os.listdir(dir)
-            if not e.startswith('.')
-        ])
 
     return (entries, options)
 
@@ -36,11 +49,11 @@ def split_args(args):
         i = args.index('--')
         return (args[:i], args[i + 1:])
     except ValueError:
-        return (args, None)
+        return (args, [])
 
 
 def cmd_instance(cmd, args):
-    entries, _ = extract_entries(split_args(args)[0], NORSU_DIR)
+    entries, _ = extract_instances(split_args(args)[0], NORSU_DIR)
 
     # safety pin (see config)
     if not args and cmd == 'remove' and \
@@ -66,7 +79,7 @@ def cmd_instance(cmd, args):
 
 
 def cmd_search(_, args):
-    entries, _ = extract_entries(split_args(args)[0], NORSU_DIR)
+    entries, _ = extract_instances(split_args(args)[0], NORSU_DIR)
 
     for entry in entries:
         name = InstanceName(entry)
@@ -83,7 +96,7 @@ def cmd_search(_, args):
 
 
 def cmd_purge(_, args):
-    entries, _ = extract_entries(split_args(args)[0], WORK_DIR)
+    entries, _ = extract_instances(split_args(args)[0], WORK_DIR)
 
     for entry in entries:
         instance = os.path.join(NORSU_DIR, entry)
@@ -96,7 +109,7 @@ def cmd_purge(_, args):
 def cmd_pgxs(_, args):
     main_args, make_args = split_args(args)
 
-    pgs, _ = extract_entries(main_args, NORSU_DIR)
+    pgs, _ = extract_instances(main_args, NORSU_DIR)
     targets, opts = extract_entries(make_args)
 
     if not targets:
@@ -124,14 +137,14 @@ def cmd_pgxs(_, args):
             ] + opts
 
             # execute make
-            check_call(args)
+            subprocess.call(args)
             print()
 
         print()
 
 
 def cmd_path(_, args):
-    entries, _ = extract_entries(split_args(args)[0], NORSU_DIR)
+    entries, _ = extract_instances(split_args(args)[0], NORSU_DIR)
 
     for entry in entries:
         print(os.path.join(NORSU_DIR, entry))
