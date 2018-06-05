@@ -140,6 +140,7 @@ def cmd_help(*_):
     print()
     print('Examples:')
     print('\t{} install 9.6.5 10 master'.format(name))
+    print('\t{} pgxs 9.6 9.5 -- install'.format(name))
     print('\t{} pull REL_10_STABLE'.format(name))
     print('\t{} remove 9.5'.format(name))
     print('\t{} status'.format(name))
