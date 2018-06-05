@@ -102,7 +102,11 @@ def cmd_pgxs(_, args):
     for pg in pgs:
         instance = Instance(pg)
 
-        print('Executing against instance', Style.bold(pg), '\n')
+        if instance.installed_commit_hash:
+            print('Executing against instance', Style.bold(pg), '\n')
+        else:
+            print(Style.yellow('Cannot find instance {}\n'.format(pg)))
+            continue
 
         for cmd in rules:
             pg_config = os.path.join(instance.main_dir, 'bin', 'pg_config')
