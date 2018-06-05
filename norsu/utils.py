@@ -1,6 +1,7 @@
 import subprocess
 
 from .exceptions import Error
+from itertools import tee, filterfalse
 
 
 def execute(args, cwd=None, output=True, error=True):
@@ -22,3 +23,8 @@ def execute(args, cwd=None, output=True, error=True):
             raise Error('Failed to execute {}'.format(' '.join(args)))
     else:
         return out
+
+
+def partition(pred, iterable):
+    t1, t2 = tee(iterable)
+    return filterfalse(pred, t1), filter(pred, t2)

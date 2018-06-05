@@ -2,25 +2,33 @@ import os
 import sys
 
 from shutil import rmtree
+from subprocess import check_call
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
 from .git import find_relevant_refs
 from .instance import Instance, InstanceName, sort_refs
 from .terminal import Style
+from .utils import partition
 
 
 def parse_args(args, dir=NORSU_DIR):
-    entries = args
+    def f(x):
+        # e.g. --noconfirm
+        return x.startswith('--') and len(x) > 2
+
+    entries, options = partition(f, args)
+
+    options = list(options)
+    entries = list(entries)
 
     if not entries:
-        entries = (
+        entries = sorted([
             e for e in os.listdir(dir)
             if not e.startswith('.')
-        )
+        ])
 
-    # TODO: also return options
-    return (sorted(entries), None)
+    return (entries, options)
 
 
 def cmd_instance(cmd, args):
@@ -77,6 +85,39 @@ def cmd_purge(_, args):
             rmtree(path=path, ignore_errors=True)
 
 
+def cmd_pgxs(_, args):
+    entries, _ = parse_args(args, NORSU_DIR)
+
+    try:
+        i = entries.index('--')
+        pgs = entries[:i]
+        rules = entries[i + 1:]
+    except ValueError:
+        pgs = entries
+        rules = None
+
+    if not rules:
+        rules = ['clean', 'install']
+
+    for pg in pgs:
+        instance = Instance(pg)
+
+        print('Executing against instance', Style.bold(pg), '\n')
+
+        for cmd in rules:
+            pg_config = os.path.join(instance.main_dir, 'bin', 'pg_config')
+
+            args = [
+                'make',
+                'USE_PGXS=1',
+                'PG_CONFIG={}'.format(pg_config),
+                cmd
+            ]
+
+            # execute make
+            check_call(args)
+
+
 def cmd_path(_, args):
     entries, _ = parse_args(args, NORSU_DIR)
 
@@ -127,9 +168,10 @@ METHODS = {
     'install': cmd_instance,
     'remove': cmd_instance,
     'status': cmd_instance,
-    'pull': cmd_instance,
     'search': cmd_search,
+    'pull': cmd_instance,
     'purge': cmd_purge,
+    'pgxs': cmd_pgxs,
     'path': cmd_path,
     'help': cmd_help,
 }
