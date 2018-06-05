@@ -12,17 +12,13 @@ from .terminal import Style
 from .utils import partition
 
 
-def parse_args(args, dir=NORSU_DIR):
-    def f(x):
-        # e.g. --noconfirm
-        return x.startswith('--') and len(x) > 2
+def extract_entries(args, dir=None):
+    entries, options = partition(lambda x: x.startswith('-'), args)
 
-    entries, options = partition(f, args)
-
-    options = list(options)
     entries = list(entries)
+    options = list(options)
 
-    if not entries:
+    if not entries and dir:
         entries = sorted([
             e for e in os.listdir(dir)
             if not e.startswith('.')
@@ -31,8 +27,20 @@ def parse_args(args, dir=NORSU_DIR):
     return (entries, options)
 
 
+def split_args(args):
+    """
+    Separate main args from auxiliary ones.
+    """
+
+    try:
+        i = args.index('--')
+        return (args[:i], args[i + 1:])
+    except ValueError:
+        return (args, None)
+
+
 def cmd_instance(cmd, args):
-    entries, _ = parse_args(args)
+    entries, _ = extract_entries(split_args(args)[0], NORSU_DIR)
 
     # safety pin (see config)
     if not args and cmd == 'remove' and \
@@ -58,7 +66,7 @@ def cmd_instance(cmd, args):
 
 
 def cmd_search(_, args):
-    entries, _ = parse_args(args)
+    entries, _ = extract_entries(split_args(args)[0], NORSU_DIR)
 
     for entry in entries:
         name = InstanceName(entry)
@@ -75,7 +83,7 @@ def cmd_search(_, args):
 
 
 def cmd_purge(_, args):
-    entries, _ = parse_args(args, WORK_DIR)
+    entries, _ = extract_entries(split_args(args)[0], WORK_DIR)
 
     for entry in entries:
         instance = os.path.join(NORSU_DIR, entry)
@@ -86,18 +94,13 @@ def cmd_purge(_, args):
 
 
 def cmd_pgxs(_, args):
-    entries, _ = parse_args(args, NORSU_DIR)
+    main_args, make_args = split_args(args)
 
-    try:
-        i = entries.index('--')
-        pgs = entries[:i]
-        rules = entries[i + 1:]
-    except ValueError:
-        pgs = entries
-        rules = None
+    pgs, _ = extract_entries(main_args, NORSU_DIR)
+    targets, opts = extract_entries(make_args)
 
-    if not rules:
-        rules = ['clean', 'install']
+    if not targets:
+        targets = ['clean', 'install']
 
     for pg in pgs:
         instance = Instance(pg)
@@ -108,22 +111,27 @@ def cmd_pgxs(_, args):
             print(Style.yellow('Cannot find instance {}\n'.format(pg)))
             continue
 
-        for cmd in rules:
-            pg_config = os.path.join(instance.main_dir, 'bin', 'pg_config')
+        pg_config = os.path.join(instance.main_dir, 'bin', 'pg_config')
+
+        for target in targets:
+            print(Style.green('$ make {} {}').format(target, ' '.join(opts)))
 
             args = [
                 'make',
                 'USE_PGXS=1',
                 'PG_CONFIG={}'.format(pg_config),
-                cmd
-            ]
+                target,
+            ] + opts
 
             # execute make
             check_call(args)
+            print()
+
+        print()
 
 
 def cmd_path(_, args):
-    entries, _ = parse_args(args, NORSU_DIR)
+    entries, _ = extract_entries(split_args(args)[0], NORSU_DIR)
 
     for entry in entries:
         print(os.path.join(NORSU_DIR, entry))
