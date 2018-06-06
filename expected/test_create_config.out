@@ -22,6 +22,10 @@ first_match = true
 configure_options = [ "CFLAGS=-g3", "--enable-cassert",]
 jobs = 1
 
+[pgxs]
+default_targets = [ "clean", "install",]
+default_options = []
+
 [misc]
 colors = true
 
