@@ -139,8 +139,11 @@ class Instance:
     def requires_rebuild(self):
         return self.built_commit_hash != self.actual_commit_hash
 
+    def get_bin_path(self, name):
+        return os.path.join(self.main_dir, 'bin', name)
+
     def pg_config(self, params=None):
-        pg_config = os.path.join(self.main_dir, 'bin', 'pg_config')
+        pg_config = self.get_bin_path('pg_config')
         if os.path.exists(pg_config):
             return execute([pg_config] + params)
 

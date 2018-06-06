@@ -1,11 +1,11 @@
 import os
-import subprocess
 import sys
 
 from shutil import rmtree
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
+from .extension import Extension
 from .git import find_relevant_refs
 from .instance import Instance, InstanceName, sort_refs
 from .terminal import Style
@@ -99,11 +99,10 @@ def cmd_purge(_, args):
     entries, _ = extract_instances(split_args(args)[0], WORK_DIR)
 
     for entry in entries:
-        instance = os.path.join(NORSU_DIR, entry)
+        instance = Instance(entry)
 
-        if not os.path.exists(instance):
-            path = os.path.join(WORK_DIR, entry)
-            rmtree(path=path, ignore_errors=True)
+        if not os.path.exists(instance.main_dir):
+            rmtree(path=instance.work_dir, ignore_errors=True)
 
 
 def cmd_pgxs(_, args):
@@ -112,14 +111,8 @@ def cmd_pgxs(_, args):
     pgs, _ = extract_instances(main_args, NORSU_DIR)
     targets, opts = extract_entries(make_args)
 
-    # provide default targets
-    if not targets:
-        targets = ['clean', 'install']
-
-    # append compiler options, if needed (e.g. for scan_build)
-    for env in ['CC', 'CXX']:
-        if env in os.environ:
-            opts.append('{}={}'.format(env, os.environ.get(env)))
+    # extension we're going to build
+    extension = Extension(work_dir=os.getcwd())
 
     for pg in pgs:
         instance = Instance(pg)
@@ -130,22 +123,8 @@ def cmd_pgxs(_, args):
             print(Style.yellow('Cannot find instance {}\n'.format(pg)))
             continue
 
-        pg_config = os.path.join(instance.main_dir, 'bin', 'pg_config')
-
-        for target in targets:
-            print(Style.green('$ make {} {}').format(target, ' '.join(opts)))
-
-            args = [
-                'make',
-                'USE_PGXS=1',
-                'PG_CONFIG={}'.format(pg_config),
-                target,
-            ] + opts
-
-            # execute make
-            subprocess.Popen(args, env=os.environ).wait()
-            print()
-
+        pg_config = instance.get_bin_path('pg_config')
+        extension.make(pg_config, targets, opts)
         print()
 
 
@@ -153,7 +132,7 @@ def cmd_path(_, args):
     entries, _ = extract_instances(split_args(args)[0], NORSU_DIR)
 
     for entry in entries:
-        print(os.path.join(NORSU_DIR, entry))
+        print(Instance(entry).main_dir)
 
 
 def cmd_help(*_):
