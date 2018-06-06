@@ -8,7 +8,7 @@ setup(
     name='norsu',
     version='0.1',
     packages=['norsu'],
-    license='PostgreSQL',
+    license='MIT',
     install_requires=install_requires,
     entry_points={
         'console_scripts': ['norsu = norsu.main:main']
