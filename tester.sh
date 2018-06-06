@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-TEST_DIR=$(dirname $0)
+TEST_DIR=$(dirname "$0")
 export NORSU_PATH=$TEST_DIR/pg
 
 
 handler() {
-	rm -rf $NORSU_PATH
+	rm -rf "$NORSU_PATH"
 	exit 1
 }
 
@@ -37,17 +37,17 @@ TESTS_BAD=0
 echo "Norsu tester"
 
 echo
-printf $YELLOW"===== Tests: ====="$RESET"\n"
+printf "$YELLOW===== Tests: =====$RESET\\n"
 echo
 
 for t in "$TEST_DIR"/tests/*; do
-	NAME="$(basename $t)"
+	NAME="$(basename "$t")"
 	OUT="${NAME%.*}.out"
 
 	EXPECTED="$TEST_DIR/expected/$OUT"
 	RESULT="$TEST_DIR/results/$OUT"
 
-	printf "Running test $NAME ... "
+	printf "Running test %s ... " "$NAME"
 	bash "$t" > "$RESULT" 2>&1
 
 	TESTS_TOTAL=$((TESTS_TOTAL + 1))
@@ -56,10 +56,10 @@ for t in "$TEST_DIR"/tests/*; do
 		DIFF="$(diff -u "$EXPECTED" "$RESULT")"
 
 		if [ "$DIFF" == "" ]; then
-			printf $GREEN"OK"$RESET"\n"
+			printf "$GREEN"OK"$RESET\\n"
 			TESTS_GOOD=$((TESTS_GOOD + 1))
 		else
-			printf $RED"FAIL"$RESET"\n"
+			printf "$GREEN"FAIL"$RESET\\n"
 			TESTS_BAD=$((TESTS_BAD + 1))
 
 			# append diff to regression report
@@ -67,20 +67,20 @@ for t in "$TEST_DIR"/tests/*; do
 		fi
 	else
 		echo
-		printf "\tmissing output file $EXPECTED\n" >&2
+		printf "\\tmissing output file %s\\n" "$EXPECTED" >&2
 	fi
 done
 
 # show report, if any
 if [ -f regression.diffs ]; then
 	echo
-	printf $YELLOW"===== Diffs: ====="$RESET"\n"
+	printf "$YELLOW===== Diffs: =====$RESET\\n"
 	echo
 	cat regression.diffs
 fi
 
 echo
-printf $YELLOW"===== Summary: ====="$RESET"\n"
+printf "$YELLOW===== Summary: =====$RESET\\n"
 echo
 
 echo "Total:  $TESTS_TOTAL"
