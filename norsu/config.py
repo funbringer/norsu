@@ -45,6 +45,9 @@ CONFIG = {
         'configure_options': ['CFLAGS=-g3', '--enable-cassert'],
         'jobs': 1,
     },
+    'pgxs': {
+        'default_targets': ['clean', 'install'],
+    },
     'misc': {
         'colors': True,
     }

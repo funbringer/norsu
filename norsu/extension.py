@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+from .config import CONFIG
 from .terminal import Style
 
 
@@ -14,7 +15,7 @@ class Extension:
 
         # provide default targets
         if not targets:
-            targets = ['clean', 'install']
+            targets = CONFIG['pgxs']['default_targets']
 
         # append compiler options, if needed (e.g. for scan_build)
         for env in ['CC', 'CXX']:
