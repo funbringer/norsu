@@ -112,8 +112,14 @@ def cmd_pgxs(_, args):
     pgs, _ = extract_instances(main_args, NORSU_DIR)
     targets, opts = extract_entries(make_args)
 
+    # provide default targets
     if not targets:
         targets = ['clean', 'install']
+
+    # append compiler options, if needed (e.g. for scan_build)
+    for env in ['CC', 'CXX']:
+        if env in os.environ:
+            opts.append('{}={}'.format(env, os.environ.get(env)))
 
     for pg in pgs:
         instance = Instance(pg)
@@ -137,7 +143,7 @@ def cmd_pgxs(_, args):
             ] + opts
 
             # execute make
-            subprocess.call(args)
+            subprocess.Popen(args, env=os.environ).wait()
             print()
 
         print()
