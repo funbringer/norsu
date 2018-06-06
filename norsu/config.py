@@ -47,6 +47,7 @@ CONFIG = {
     },
     'pgxs': {
         'default_targets': ['clean', 'install'],
+        'default_options': [],
     },
     'misc': {
         'colors': True,

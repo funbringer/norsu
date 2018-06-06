@@ -10,12 +10,15 @@ class Extension:
         self.work_dir = work_dir
 
     def make(self, pg_config, targets=None, options=None):
-        # copy options
-        opts = [x for x in options]
 
-        # provide default targets
         if not targets:
             targets = CONFIG['pgxs']['default_targets']
+
+        if not options:
+            options = CONFIG['pgxs']['default_options']
+
+        # copy options
+        opts = [x for x in options]
 
         # append compiler options, if needed (e.g. for scan_build)
         for env in ['CC', 'CXX']:
