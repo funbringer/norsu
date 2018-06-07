@@ -26,6 +26,9 @@ jobs = 1
 default_targets = [ "clean", "install",]
 default_options = []
 
+[tools]
+make = "make"
+
 [misc]
 colors = true
 
