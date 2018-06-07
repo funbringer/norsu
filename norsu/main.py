@@ -2,6 +2,7 @@ import os
 import sys
 
 from shutil import rmtree
+from testgres import get_new_node
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
@@ -9,7 +10,7 @@ from .extension import Extension
 from .git import find_relevant_refs
 from .instance import Instance, InstanceName, sort_refs
 from .terminal import Style
-from .utils import partition
+from .utils import partition, try_read_file
 
 
 def extract_instances(args, dir):
@@ -108,14 +109,16 @@ def cmd_purge(_, args):
 def cmd_pgxs(_, args):
     main_args, make_args = split_args(args)
 
-    pgs, _ = extract_instances(main_args, NORSU_DIR)
-    targets, opts = extract_entries(make_args)
+    pgs, cmd_opts = extract_instances(main_args, NORSU_DIR)
+    targets, make_opts = extract_entries(make_args)
+    work_dir = os.getcwd()
 
     # extension we're going to build
-    extension = Extension(work_dir=os.getcwd())
+    extension = Extension(work_dir=work_dir)
 
     for pg in pgs:
         instance = Instance(pg)
+        pg_config = instance.get_bin_path('pg_config')
 
         if instance.installed_commit_hash:
             print('Executing against instance', Style.bold(pg), '\n')
@@ -123,9 +126,30 @@ def cmd_pgxs(_, args):
             print(Style.yellow('Cannot find instance {}\n'.format(pg)))
             continue
 
-        pg_config = instance.get_bin_path('pg_config')
-        extension.make(pg_config, targets, opts)
-        print()
+        # should we start PostgreSQL?
+        if any(k in cmd_opts for k in ['-R', '--run-pg']):
+            regress_opts = extension.extra_regress_opts(pg_config)
+            temp_conf_file = regress_opts.get('--temp-config')
+            temp_conf = ''
+
+            # read additional config
+            if temp_conf_file:
+                path = os.path.join(work_dir, temp_conf_file)
+                temp_conf = try_read_file(path)
+                print('Found custom config:', os.path.basename(path))
+
+            # run commands under a running PostgreSQL instance
+            with get_new_node(port=5432) as node:
+                print('Starting temporary PostgreSQL instance...\n')
+                os.environ['PG_CONFIG'] = pg_config
+                node.cleanup_on_bad_exit = True
+                node.init().append_conf(line=temp_conf).start()
+
+                extension.make(pg_config, targets, make_opts)
+        else:
+            extension.make(pg_config, targets, make_opts)
+
+        print()  # splitter
 
 
 def cmd_path(_, args):

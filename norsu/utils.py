@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 from .exceptions import Error
@@ -28,3 +29,11 @@ def execute(args, cwd=None, output=True, error=True):
 def partition(pred, iterable):
     t1, t2 = tee(iterable)
     return filterfalse(pred, t1), filter(pred, t2)
+
+
+def try_read_file(path):
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            return f.read()
+
+    return ''

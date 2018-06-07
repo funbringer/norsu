@@ -1,8 +1,12 @@
 import os
+import shlex
 import subprocess
+
+from pkg_resources import resource_filename
 
 from .config import CONFIG
 from .terminal import Style
+from .utils import execute
 
 
 class Extension:
@@ -38,3 +42,30 @@ class Extension:
             # execute make (writes to stdout)
             subprocess.Popen(args, cwd=self.work_dir, env=os.environ).wait()
             print()
+
+    def makefile_print_var(self, pg_config, name):
+        makefile = os.path.join(self.work_dir, 'Makefile')
+        print_mk = resource_filename('norsu', 'data/print.mk')
+
+        args = [
+            'make',
+            'USE_PGXS=1',
+            'PG_CONFIG={}'.format(pg_config),
+            '-f', makefile,
+            '-f', print_mk,
+            'print-{}'.format(name)
+        ]
+
+        key, _, value = execute(args).partition('=')
+        return value
+
+    def extra_regress_opts(self, pg_config):
+        name = 'EXTRA_REGRESS_OPTS'
+        ret = self.makefile_print_var(pg_config, name)
+
+        result = {}
+        for s in shlex.split(ret):
+            key, _, value = s.partition('=')
+            result[key] = value
+
+        return result
