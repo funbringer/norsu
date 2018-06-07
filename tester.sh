@@ -59,7 +59,7 @@ for t in "$TEST_DIR"/tests/*; do
 			printf "$GREEN"OK"$RESET\\n"
 			TESTS_GOOD=$((TESTS_GOOD + 1))
 		else
-			printf "$GREEN"FAIL"$RESET\\n"
+			printf "$RED"FAIL"$RESET\\n"
 			TESTS_BAD=$((TESTS_BAD + 1))
 
 			# append diff to regression report

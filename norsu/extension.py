@@ -3,7 +3,7 @@ import shlex
 
 from pkg_resources import resource_filename
 
-from .config import CONFIG
+from .config import CONFIG, TOOL_MAKE
 from .terminal import Style
 from .utils import execute, ExecOutput
 
@@ -29,10 +29,12 @@ class Extension:
                 opts.append('{}={}'.format(env, os.environ.get(env)))
 
         for target in targets:
-            print(Style.green('$ make {} {}').format(target, ' '.join(opts)))
+            print(Style.green('$ {} {} {}').format(TOOL_MAKE,
+                                                   target,
+                                                   ' '.join(opts)))
 
             args = [
-                'make',
+                TOOL_MAKE,
                 'USE_PGXS=1',
                 'PG_CONFIG={}'.format(pg_config),
                 target,
@@ -50,7 +52,7 @@ class Extension:
         print_mk = resource_filename('norsu', 'data/print.mk')
 
         args = [
-            'make',
+            TOOL_MAKE,
             'USE_PGXS=1',
             'PG_CONFIG={}'.format(pg_config),
             '-f', makefile,

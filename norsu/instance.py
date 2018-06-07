@@ -5,7 +5,7 @@ import shlex
 from enum import Enum
 from shutil import rmtree
 
-from .config import NORSU_DIR, WORK_DIR, CONFIG
+from .config import NORSU_DIR, WORK_DIR, CONFIG, TOOL_MAKE
 from .exceptions import Error
 from .terminal import Style
 from .utils import execute, ExecOutput
@@ -282,7 +282,8 @@ class Instance:
             self.built_commit_hash = self.actual_commit_hash
 
             jobs = int(CONFIG['build']['jobs'])
-            for args in [['make', '-j{}'.format(jobs)], ['make', 'install']]:
+            for arg in ['-j{}'.format(jobs), 'install']:
+                args = [TOOL_MAKE, arg]
                 execute(args, cwd=self.work_dir, output=ExecOutput.Devnull)
 
             # update installed commit hash
@@ -293,7 +294,8 @@ class Instance:
     def _make_distclean(self):
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
         if os.path.exists(makefile) and self.requires_rebuild:
-            args = ['make', 'distclean']
-            execute(args, cwd=self.work_dir, error=False, output=ExecOutput.Devnull)
+            args = [TOOL_MAKE, 'distclean']
+            execute(args, cwd=self.work_dir, error=False,
+                    output=ExecOutput.Devnull)
 
             step('Prepared work dir for a new build')

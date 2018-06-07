@@ -49,6 +49,9 @@ CONFIG = {
         'default_targets': ['clean', 'install'],
         'default_options': [],
     },
+    'tools': {
+        'make': 'make',
+    },
     'misc': {
         'colors': True,
     }
@@ -66,3 +69,5 @@ else:
         except Error as e:
             print(str(e))
             exit(1)
+
+TOOL_MAKE = CONFIG['tools']['make']
