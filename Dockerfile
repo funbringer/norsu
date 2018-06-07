@@ -4,6 +4,7 @@ FROM alpine
 RUN apk add --no-cache \
 	bash git \
 	openssl curl \
+	linux-headers \
 	perl perl-ipc-run \
 	build-base make musl-dev gcc bison flex coreutils \
 	zlib-dev libedit-dev \
