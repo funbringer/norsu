@@ -8,7 +8,7 @@ from shutil import rmtree
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
 from .terminal import Style
-from .utils import execute
+from .utils import execute, ExecOutput
 
 from .git import \
     GitRepo, \
@@ -273,7 +273,7 @@ class Instance:
                 '--prefix={}'.format(self.main_dir)
             ] + self._configure_options()
 
-            execute(args, cwd=self.work_dir, output=False)
+            execute(args, cwd=self.work_dir, output=ExecOutput.Devnull)
             step('Configured sources')
 
     def _make_install(self):
@@ -283,7 +283,7 @@ class Instance:
 
             jobs = int(CONFIG['build']['jobs'])
             for args in [['make', '-j{}'.format(jobs)], ['make', 'install']]:
-                execute(args, cwd=self.work_dir, output=False)
+                execute(args, cwd=self.work_dir, output=ExecOutput.Devnull)
 
             # update installed commit hash
             self.installed_commit_hash = self.actual_commit_hash
@@ -294,6 +294,6 @@ class Instance:
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
         if os.path.exists(makefile) and self.requires_rebuild:
             args = ['make', 'distclean']
-            execute(args, cwd=self.work_dir, output=False, error=False)
+            execute(args, cwd=self.work_dir, error=False, output=ExecOutput.Devnull)
 
             step('Prepared work dir for a new build')

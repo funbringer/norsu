@@ -1,18 +1,26 @@
 import os
 import subprocess
 
+from enum import Enum
+
 from .exceptions import Error
 from itertools import tee, filterfalse
 
 
-def execute(args, cwd=None, output=True, error=True):
-    stdout = subprocess.PIPE if output else subprocess.DEVNULL
+class ExecOutput(Enum):
+    Stdout = None
+    Pipe = subprocess.PIPE
+    Devnull = subprocess.DEVNULL
 
-    p = subprocess.Popen(args, cwd=cwd,
-                         stdout=stdout,
+
+def execute(args, cwd=None, env=None, error=True, output=ExecOutput.Pipe):
+    p = subprocess.Popen(args,
+                         cwd=cwd,
+                         env=env,
+                         stdout=output.value,
                          stderr=subprocess.STDOUT)
 
-    if output:
+    if output == ExecOutput.Pipe:
         out, _ = p.communicate()
         out = out.decode('utf8')
     else:

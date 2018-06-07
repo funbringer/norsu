@@ -3,7 +3,7 @@ import os
 from functools import total_ordering
 
 from .config import CONFIG
-from .utils import execute
+from .utils import execute, ExecOutput
 
 
 @total_ordering
@@ -114,11 +114,11 @@ class GitRepo:
             url or self.url,
             self.work_dir,
         ]
-        execute(args, output=False)
+        execute(args, output=ExecOutput.Devnull)
 
     def pull(self, remote='origin', branch=None):
         args = ['git', 'pull', remote, branch or self.branch]
-        execute(args, cwd=self.work_dir, output=False)
+        execute(args, cwd=self.work_dir, output=ExecOutput.Devnull)
 
     def distance(self, commit1, commit2):
         args = [

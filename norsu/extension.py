@@ -1,12 +1,11 @@
 import os
 import shlex
-import subprocess
 
 from pkg_resources import resource_filename
 
 from .config import CONFIG
 from .terminal import Style
-from .utils import execute
+from .utils import execute, ExecOutput
 
 
 class Extension:
@@ -40,7 +39,10 @@ class Extension:
             ] + opts
 
             # execute make (writes to stdout)
-            subprocess.Popen(args, cwd=self.work_dir, env=os.environ).wait()
+            execute(args,
+                    cwd=self.work_dir,
+                    env=os.environ,
+                    output=ExecOutput.Stdout)
             print()
 
     def makefile_print_var(self, pg_config, name):
