@@ -44,6 +44,7 @@ pip install --user -U .
 In general,
 
 * If a command accepts `[target]...`, it will default to all available builds if no target is specified;
+* Targets may be versions (e.g. `10`, `9.6.8`, `9.5`) or (parts of) branch names (e.g. `master`, `REL_10`);
 * Target might be positive (e.g. `master`, `9.6.5`, `10`) and negative (i.e. exclude some build, e.g. `^master`);
 * An interrupted command will try to continue where it left off next time;
 * Time-consuming commands print steps they're taking to achieve goals;
@@ -62,6 +63,26 @@ select the most relevant one, configure and install it to `$NORSU_PATH/target` (
 #### `norsu search [target]...`
 
 For each `target`, print a list of matching branches to be used by `install` command.
+Currently, a branch matches if `target` occurs in its name (is a substring).
+
+Branches are sorted by decreasing priority:
+* if `target` is version, branches are sorted by "freshness" (the most fresh release wins);
+* otherwise, branches are sorted by similarty (the most similar name wins);
+
+Example:
+
+```bash
+$ norsu search 10
+Search query: 10
+         REL_10_STABLE
+         REL_10_4
+         REL_10_3
+         REL_10_2
+         REL_10_1
+         REL_10_0
+         REL_10_RC1
+         ...
+```
 
 #### `norsu pull [target]...`
 
