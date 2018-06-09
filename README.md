@@ -62,6 +62,18 @@ select the most relevant one, configure and install it to `$NORSU_PATH/target`.
 
 * if **already installed**, check the branch for updates (new commits), then rebuild and/or reinstall if necessary.
 
+Example:
+
+```bash
+# install some releases
+$ norsu install 9.5 9.6 10
+Selected instance: 9.5
+        => No work dir, choosing repo & branch
+        => Selected repo git://git.postgresql.org/git/postgresql.git
+        => Selected branch REL9_5_STABLE
+        ...
+```
+
 #### `norsu search [target]...`
 
 For each `target`, print a list of matching branches to be used by `install` command.
