@@ -2,6 +2,7 @@ import os
 import sys
 
 from shutil import rmtree
+from time import sleep
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
@@ -81,6 +82,25 @@ def cmd_instance(cmd, args):
         cmds[cmd]()
 
         print()
+
+
+def cmd_run(_, args):
+    args, opts = extract_entries(split_args(args)[0])
+
+    if len(args) != 1:
+        raise Error('Expected to see 1 name')
+
+    grab_pgxs = '--pgxs' in opts
+
+    instance = Instance(args[0])
+
+    with run_temp(instance, grab_pgxs=grab_pgxs) as node:
+        print('dir:', node.base_dir)
+        print('port:', node.port)
+        print('Press Ctrl+C to exit')
+
+        while True:
+            sleep(1)
 
 
 def cmd_search(_, args):
@@ -199,7 +219,7 @@ METHODS = {
     'remove': cmd_instance,
     'status': cmd_instance,
     'pull': cmd_instance,
-    'run': cmd_instance,
+    'run': cmd_run,
     'search': cmd_search,
     'purge': cmd_purge,
     'pgxs': cmd_pgxs,
