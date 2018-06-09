@@ -9,10 +9,11 @@ from .utils import execute, ExecOutput
 
 
 class Extension:
-    def __init__(self, work_dir):
+    def __init__(self, work_dir, pg_config):
         self.work_dir = work_dir
+        self.pg_config = pg_config
 
-    def make(self, pg_config, targets=None, options=None):
+    def make(self, targets=None, options=None):
 
         if not targets:
             targets = CONFIG['pgxs']['default_targets']
@@ -21,24 +22,30 @@ class Extension:
             options = CONFIG['pgxs']['default_options']
 
         # copy options
-        opts = [x for x in options]
+        opts = options[:]
 
         # append compiler options, if needed (e.g. for scan_build)
+        mk_vars = []
         for env in ['CC', 'CXX']:
             if env in os.environ:
-                opts.append('{}={}'.format(env, os.environ.get(env)))
+                mk_vars.append('{}={}'.format(env, os.environ.get(env)))
 
         for target in targets:
-            print(Style.green('$ {} {} {}').format(TOOL_MAKE,
-                                                   target,
-                                                   ' '.join(opts)))
+            # print simplified command
+            quoted_vars = ' '.join([shlex.quote(x) for x in mk_vars])
+            quoted_opts = ' '.join([shlex.quote(x) for x in opts])
+            s = '$ make {} {} {}'.format(quoted_vars, quoted_opts, target)
+            print(Style.green(s))
 
             args = [
                 TOOL_MAKE,
                 'USE_PGXS=1',
-                'PG_CONFIG={}'.format(pg_config),
-                target,
-            ] + opts
+                'PG_CONFIG={}'.format(self.pg_config),
+            ]
+
+            args.extend(mk_vars)
+            args.extend(opts)
+            args.append(target)
 
             # execute make (writes to stdout)
             execute(args,
@@ -47,29 +54,18 @@ class Extension:
                     output=ExecOutput.Stdout)
             print()
 
-    def makefile_print_var(self, pg_config, name):
+    def makefile_var(self, name):
         makefile = os.path.join(self.work_dir, 'Makefile')
         print_mk = resource_filename('norsu', 'data/print.mk')
 
         args = [
             TOOL_MAKE,
             'USE_PGXS=1',
-            'PG_CONFIG={}'.format(pg_config),
+            'PG_CONFIG={}'.format(self.pg_config),
             '-f', makefile,
             '-f', print_mk,
             'print-{}'.format(name)
         ]
 
-        key, _, value = execute(args).partition('=')
-        return value
-
-    def extra_regress_opts(self, pg_config):
-        name = 'EXTRA_REGRESS_OPTS'
-        ret = self.makefile_print_var(pg_config, name)
-
-        result = {}
-        for s in shlex.split(ret):
-            key, _, value = s.partition('=')
-            result[key] = value
-
-        return result
+        # return var's value
+        return execute(args).partition('=')[2]

@@ -1,4 +1,5 @@
 import os
+import shlex
 import subprocess
 
 from enum import Enum
@@ -45,3 +46,11 @@ def try_read_file(path):
             return f.read()
 
     return ''
+
+
+def str_args_to_dict(a):
+    result = {}
+    for arg in shlex.split(a):
+        k, _, v = arg.partition('=')
+        result[k] = v
+    return result

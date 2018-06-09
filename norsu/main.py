@@ -10,7 +10,11 @@ from .extension import Extension
 from .git import find_relevant_refs
 from .instance import Instance, InstanceName, sort_refs
 from .terminal import Style
-from .utils import partition, try_read_file
+
+from .utils import \
+    partition, \
+    try_read_file, \
+    str_args_to_dict
 
 
 def extract_instances(args, dir):
@@ -113,12 +117,10 @@ def cmd_pgxs(_, args):
     targets, make_opts = extract_entries(make_args)
     work_dir = os.getcwd()
 
-    # extension we're going to build
-    extension = Extension(work_dir=work_dir)
-
     for pg in pgs:
         instance = Instance(pg)
         pg_config = instance.get_bin_path('pg_config')
+        extension = Extension(work_dir=work_dir, pg_config=pg_config)
 
         if instance.installed_commit_hash:
             print('Executing against instance', Style.bold(pg), '\n')
@@ -128,7 +130,9 @@ def cmd_pgxs(_, args):
 
         # should we start PostgreSQL?
         if any(k in cmd_opts for k in ['-R', '--run-pg']):
-            regress_opts = extension.extra_regress_opts(pg_config)
+            mk_var = 'EXTRA_REGRESS_OPTS'
+
+            regress_opts = str_args_to_dict(extension.makefile_var(mk_var))
             temp_conf_file = regress_opts.get('--temp-config')
             temp_conf = ''
 
@@ -139,15 +143,20 @@ def cmd_pgxs(_, args):
                 print('Found custom config:', os.path.basename(path))
 
             # run commands under a running PostgreSQL instance
-            with get_new_node(port=5432) as node:
+            with get_new_node() as node:
                 print('Starting temporary PostgreSQL instance...\n')
                 os.environ['PG_CONFIG'] = pg_config
+
+                # prepare and start a new node
                 node.cleanup_on_bad_exit = True
                 node.init().append_conf(line=temp_conf).start()
 
-                extension.make(pg_config, targets, make_opts)
+                # make pg_regress aware of non-default port
+                make_opts.append('{}+=--port={}'.format(mk_var, node.port))
+
+                extension.make(targets=targets, options=make_opts)
         else:
-            extension.make(pg_config, targets, make_opts)
+            extension.make(targets=targets, options=make_opts)
 
         print()  # splitter
 
