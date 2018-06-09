@@ -2,19 +2,19 @@ import os
 import sys
 
 from shutil import rmtree
-from testgres import get_new_node
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
 from .extension import Extension
 from .git import find_relevant_refs
-from .instance import Instance, InstanceName, sort_refs
 from .terminal import Style
+from .utils import partition
 
-from .utils import \
-    partition, \
-    try_read_file, \
-    str_args_to_dict
+from .instance import \
+    Instance, \
+    InstanceName, \
+    sort_refs, \
+    run_temp
 
 
 def extract_instances(args, dir):
@@ -132,28 +132,10 @@ def cmd_pgxs(_, args):
         if any(k in cmd_opts for k in ['-R', '--run-pg']):
             mk_var = 'EXTRA_REGRESS_OPTS'
 
-            regress_opts = str_args_to_dict(extension.makefile_var(mk_var))
-            temp_conf_file = regress_opts.get('--temp-config')
-            temp_conf = ''
-
-            # read additional config
-            if temp_conf_file:
-                path = os.path.join(work_dir, temp_conf_file)
-                temp_conf = try_read_file(path)
-                print('Found custom config:', os.path.basename(path))
-
             # run commands under a running PostgreSQL instance
-            with get_new_node() as node:
-                print('Starting temporary PostgreSQL instance...\n')
-                os.environ['PG_CONFIG'] = pg_config
-
-                # prepare and start a new node
-                node.cleanup_on_bad_exit = True
-                node.init().append_conf(line=temp_conf).start()
-
+            with run_temp(instance, grab_pgxs=True) as node:
                 # make pg_regress aware of non-default port
                 make_opts.append('{}+=--port={}'.format(mk_var, node.port))
-
                 extension.make(targets=targets, options=make_opts)
         else:
             extension.make(targets=targets, options=make_opts)
@@ -197,6 +179,10 @@ def main():
     command = args[0]
     method = METHODS.get(command)
 
+    if command == '--help':
+        cmd_help()
+        exit(0)
+
     try:
         if method is None:
             raise Error('Unknown command {}'.format(command))
@@ -212,8 +198,9 @@ METHODS = {
     'install': cmd_instance,
     'remove': cmd_instance,
     'status': cmd_instance,
-    'search': cmd_search,
     'pull': cmd_instance,
+    'run': cmd_instance,
+    'search': cmd_search,
     'purge': cmd_purge,
     'pgxs': cmd_pgxs,
     'path': cmd_path,

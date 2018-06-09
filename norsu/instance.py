@@ -2,19 +2,27 @@ import os
 import re
 import shlex
 
+from contextlib import contextmanager
 from enum import Enum
 from shutil import rmtree
+from testgres import get_new_node
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG, TOOL_MAKE
 from .exceptions import Error
+from .extension import Extension
 from .terminal import Style
-from .utils import execute, ExecOutput
 
 from .git import \
     GitRepo, \
     SortRefByVersion, \
     SortRefBySimilarity, \
     find_relevant_refs
+
+from .utils import \
+    execute, \
+    ExecOutput, \
+    try_read_file, \
+    str_args_to_dict
 
 
 def step(*args):
@@ -299,3 +307,36 @@ class Instance:
                     output=ExecOutput.Devnull)
 
             step('Prepared work dir for a new build')
+
+
+@contextmanager
+def run_temp(instance, cwd=None, grab_pgxs=False, **kwargs):
+    work_dir = cwd or os.getcwd()
+    pg_config = instance.get_bin_path('pg_config')
+    temp_conf = ''
+
+    # HACK: help testgres find our instance
+    os.environ['PG_CONFIG'] = pg_config
+
+    # Grab extra extension options
+    if grab_pgxs:
+        extension = Extension(work_dir=work_dir, pg_config=pg_config)
+
+        mk_var = 'EXTRA_REGRESS_OPTS'
+        regress_opts = str_args_to_dict(extension.makefile_var(mk_var))
+        temp_conf_file = regress_opts.get('--temp-config')
+
+        # read additional config
+        if temp_conf_file:
+            path = os.path.join(work_dir, temp_conf_file)
+            temp_conf = try_read_file(path)
+            print('Found custom config:', os.path.basename(path))
+
+    with get_new_node(**kwargs) as node:
+        print('Starting temporary PostgreSQL instance...\n')
+
+        # prepare and start a new node
+        node.cleanup_on_bad_exit = True
+        node.init().append_conf(line=temp_conf).start()
+
+        yield node
