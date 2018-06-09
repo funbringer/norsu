@@ -128,7 +128,7 @@ Examples:
 # install to all builds
 norsu pgxs
 
-# install to master (rules and options are passed to make)
+# install to everything but master (rules and options are passed to make)
 norsu pgxs ^master -- clean install -j5
 
 # run regression tests against 9.6.9
