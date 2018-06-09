@@ -136,6 +136,8 @@ Known `cmd_options`:
 
 > NOTE: this command should be executed in extension's directory
 
+For each `target`, executes `make USE_PGXS=1 PG_CONFIG=path/to/pg_config ...` in extension's directory.
+
 Examples:
 
 ```bash
