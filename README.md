@@ -1,0 +1,131 @@
+## [WIP] Norsu -- PostgreSQL builds manager
+
+### Introduction
+
+Norsu (finnish for *elephant*) is meant to be a tool for quickly installing
+and updating custom PostgreSQL builds, as well as testing your extensions
+against them.
+
+This might be useful if you're an extension developer and you aim to support
+several major PostgreSQL releases. Over time, running regression test suites
+against a growing number of releases might become a combersome task, hence a
+need for an automation tool.
+
+Currently, Norsu can:
+
+* install & remove PostgreSQL release- and dev- branches and keep them up-to-date;
+* show various properties of builds (configure flags, commit hash, version etc);
+* search for branches across multiple git repos (specified in a config file);
+* install and test PostgreSQL extensions using regression test suites;
+
+### Setup
+
+> NOTE: Python 3.3+ is required.
+
+To install a stable release, just run the following in your favorite shell:
+
+```bash
+pip install --user norsu
+```
+
+and you're good to go!
+
+
+To install a dev version, clone this repo and run:
+
+```
+pip install --user -U .
+```
+
+### Usage
+
+> NOTE: the public API **has not been stabilized yet**, it's better to take a look at this page from time to time.
+
+In general,
+
+* If a command accepts `[target]...`, it will default to all available builds if no target is specified;
+* Target might be positive (e.g. `master`, `9.6.5`, `10`) and negative (i.e. exclude some build, e.g. `^master`);
+* An interrupted command will try to continue where it left off next time;
+* Time-consuming commands print steps they're taking to achieve goals;
+
+Here's a non-exhaustive list of provided commands:
+
+#### `norsu install [target]...`
+
+For each `target`:
+
+* if **not yet installed**, find a list of **matching** branches in known git repos (specified in config file),
+select the most relevant one, configure and install it to `$NORSU_PATH/target` (by default, `$NORSU_PATH` is `$HOME/pg`).
+
+* if **already installed**, check the branch for updates (new commits), then rebuild and/or reinstall if necessary.
+
+#### `norsu search [target]...`
+
+For each `target`, print a list of matching branches to be used by `install` command.
+
+#### `norsu pull [target]...`
+
+For each `target`, pull new commits from a git repo (but don't re-build anything).
+This command prints the amount of new commits available and updates info shown by `status` command.
+
+#### `norsu status [target]...`
+
+Print some info about each `target`, for instance:
+
+```
+Selected instance: master
+Status:        Installed (out of date)
+Main dir:      $HOME/pg/master
+Work dir:      $HOME/pg/.norsu/master
+Branch:        master
+Version:       PostgreSQL 11beta1
+Commit:        6a75b58065c8da69a259657fc40d18e76157f265
+CONFIGURE:     ['CFLAGS=-g3', '--enable-cassert']
+```
+
+#### `norsu remove [target]...`
+
+Remove `targets` (main dirs) and their cached git repos (work dirs).
+
+#### `norsu pgxs [target]... [cmd_option]... [-- [make_option]...]`
+
+Where:
+
+* `target` -- run make targets argainst the specified builds
+* `cmd_option` -- additional options for this command, e.g. `--run-pg`
+* `make_option` -- options to be passed to `make`, e.g. `clean install -j5`
+
+Known `cmd_options`:
+
+* `-R`, `--run-pg` -- start a temp instance of PostgreSQL for the duration of command
+
+> NOTE: this command should be executed in extension's directory
+
+Examples:
+
+```bash
+# install to all builds
+norsu pgxs
+
+# install to master (rules and options are passed to make)
+norsu pgxs ^master -- clean install -j5
+
+# run regression tests against 9.6.9
+norsu pgxs 9.6.9 -R -- installcheck
+
+# check using clang-analyzer for builds 9.6 and 10
+scan-build norsu pgxs 9.5 10 -- clean all
+```
+
+#### `norsu path [target]...`
+
+Print paths to install dirs of `targets`.
+
+#### `norsu purge [target]...`
+
+For each `target`, remove orphaned git repos (work dirs).
+
+
+### Miscellaneous
+
+Don't hesitate to open new issues and express your ideas!
