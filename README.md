@@ -37,6 +37,8 @@ To install a dev version, clone this repo and run:
 pip install --user -U .
 ```
 
+The config file is located at `$NORSU_PATH/.norsu.toml` (by default, `$NORSU_PATH` is `$HOME/pg`).
+
 ### Usage
 
 > NOTE: the public API **has not been stabilized yet**, it's better to take a look at this page from time to time.
@@ -56,7 +58,7 @@ Here's a non-exhaustive list of provided commands:
 For each `target`:
 
 * if **not yet installed**, find a list of **matching** branches in known git repos (specified in config file),
-select the most relevant one, configure and install it to `$NORSU_PATH/target` (by default, `$NORSU_PATH` is `$HOME/pg`).
+select the most relevant one, configure and install it to `$NORSU_PATH/target`.
 
 * if **already installed**, check the branch for updates (new commits), then rebuild and/or reinstall if necessary.
 
