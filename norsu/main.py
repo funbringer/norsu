@@ -9,13 +9,17 @@ from .exceptions import Error
 from .extension import Extension
 from .git import find_relevant_refs
 from .terminal import Style
-from .utils import partition
 
 from .instance import \
     Instance, \
     InstanceName, \
     sort_refs, \
     run_temp
+
+from .utils import \
+    partition, \
+    execute, \
+    ExecOutput
 
 
 def extract_instances(args, dir):
@@ -91,16 +95,26 @@ def cmd_run(_, args):
         raise Error('Expected to see 1 name')
 
     grab_pgxs = '--pgxs' in opts
+    run_psql = '--psql' in opts
 
     instance = Instance(args[0])
 
     with run_temp(instance, grab_pgxs=grab_pgxs) as node:
-        print('dir:', node.base_dir)
-        print('port:', node.port)
-        print('Press Ctrl+C to exit')
+        if run_psql:
+            args = [
+                instance.get_bin_path('psql'),
+                '-d', 'postgres',
+                '-p', str(node.port)
+            ]
 
-        while True:
-            sleep(1)
+            execute(args, output=ExecOutput.Stdout)
+        else:
+            print('dir:', node.base_dir)
+            print('port:', node.port)
+            print('Press Ctrl+C to exit')
+
+            while True:
+                sleep(1)
 
 
 def cmd_search(_, args):
