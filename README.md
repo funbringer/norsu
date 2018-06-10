@@ -28,6 +28,13 @@ To install a stable release, just run the following in your favorite shell:
 pip install --user norsu
 ```
 
+Also, make sure that [python's user base](https://pip.readthedocs.io/en/latest/user_guide/#user-installs) is in `$PATH`:
+
+```bash
+# add this to .bashrc (or .zshrc, whatever)
+export PATH=$PATH:$(python -c "import site; print(site.getuserbase())")/bin
+```
+
 and you're good to go!
 
 
@@ -64,9 +71,10 @@ select the most relevant one, configure and install it to `$NORSU_PATH/target`.
 
 Example:
 
-```bash
+```
 # install some releases
 $ norsu install 9.5 9.6 10
+
 Selected instance: 9.5
         => No work dir, choosing repo & branch
         => Selected repo git://git.postgresql.org/git/postgresql.git
@@ -85,8 +93,9 @@ Branches are sorted by decreasing priority:
 
 Example:
 
-```bash
+```
 $ norsu search 10
+
 Search query: 10
          REL_10_STABLE
          REL_10_4
@@ -108,6 +117,8 @@ This command prints the amount of new commits available and updates info shown b
 Print some info about each `target`, for instance:
 
 ```
+$ norsu status master
+
 Selected instance: master
 Status:        Installed (out of date)
 Main dir:      $HOME/pg/master
@@ -126,17 +137,17 @@ Remove `targets` (main dirs) and their cached git repos (work dirs).
 
 Where:
 
-* `target` -- run make targets argainst the specified builds
+* `target` -- run `make ...` against the specified builds
 * `cmd_option` -- additional options for this command, e.g. `--run-pg`
 * `make_option` -- options to be passed to `make`, e.g. `clean install -j5`
 
 Known `cmd_options`:
 
-* `-R`, `--run-pg` -- start a temp instance of PostgreSQL for the duration of command
+* `-R`, `--run-pg` -- start a temp instance of PostgreSQL for the duration of the command
 
 > NOTE: this command should be executed in extension's directory
 
-For each `target`, executes `make USE_PGXS=1 PG_CONFIG=path/to/pg_config ...` in extension's directory.
+For each `target`, execute `make USE_PGXS=1 PG_CONFIG=path/to/pg_config ...` in extension's directory.
 
 Examples:
 
@@ -144,7 +155,7 @@ Examples:
 # install to all builds
 norsu pgxs
 
-# install to everything but master (rules and options are passed to make)
+# install to everything but master (options following '--' are passed to make)
 norsu pgxs ^master -- clean install -j5
 
 # run regression tests against 9.6.9
@@ -154,9 +165,32 @@ norsu pgxs 9.6.9 -R -- installcheck
 scan-build norsu pgxs 9.5 10 -- clean all
 ```
 
+#### `norsu run target [cmd_option]...`
+
+Known `cmd_options`:
+
+* `--pgxs` -- use PG config files provided by extension, as in `pgxs` command
+* `--psql` -- run `psql` connected to a defaut DB after PostgreSQL has started
+
+Create and run a temporary instance (DB) of PostgreSQL using build named `target`.
+The instance will be up & running until command is interrupted (e.g. with `SIGINT`).
+
+Example:
+
+```
+$ norsu run 10 --psql
+
+Starting temporary PostgreSQL instance...
+
+psql (10.4)
+Type "help" for help.
+
+postgres=#
+```
+
 #### `norsu path [target]...`
 
-Print paths to install dirs of `targets`.
+Print paths to install dirs (main dirs) of `targets`.
 
 #### `norsu purge [target]...`
 
