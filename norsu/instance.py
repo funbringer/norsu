@@ -99,7 +99,11 @@ class InstanceName:
 
 class Instance:
     def __init__(self, name):
-        self.name = InstanceName(name)
+        if isinstance(name, InstanceName):
+            self.name = name
+        else:
+            self.name = InstanceName(name)
+
         self.main_dir = os.path.join(NORSU_DIR, name)
         self.work_dir = os.path.join(WORK_DIR, name)
         self.git = GitRepo(work_dir=self.work_dir)

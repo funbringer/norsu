@@ -1,4 +1,6 @@
+import argparse
 import os
+import signal
 import sys
 
 from shutil import rmtree
@@ -23,26 +25,22 @@ from .utils import \
     ExecOutput
 
 
-def extract_instances(args, dir):
-    entries, options = extract_entries(args)
+def preprocess_targets(raw_targets, dir=NORSU_DIR):
+    entries_pos, entries_neg = partition(lambda x: x.startswith('^'), raw_targets)
 
-    entries_pos, entries_neg = partition(lambda x: x.startswith('^'), entries)
+    entries_neg = set((e[1:] for e in entries_neg))  # remove '^'
+    entries_pos = set(entries_pos)
 
-    entries_pos = list(entries_pos)
-    entries_neg = [e[1:] for e in entries_neg]  # remove caps
-
-    if not entries_pos:
-        entries_pos = sorted([
+    if not entries_pos or entries_neg:
+        entries_pos = set([
             e for e in os.listdir(dir)
             if not e.startswith('.')
         ])
 
-    entries = [e for e in entries_pos if e not in entries_neg]
-
-    return (entries, options)
+    return sorted(entries_pos - entries_neg)
 
 
-def extract_entries(args):
+def split_make_args(args):
     entries, options = partition(lambda x: x.startswith('-'), args)
 
     entries = list(entries)
@@ -51,7 +49,7 @@ def extract_entries(args):
     return (entries, options)
 
 
-def split_args(args):
+def split_args_extra(args):
     """
     Separate main args from auxiliary ones.
     """
@@ -63,18 +61,18 @@ def split_args(args):
         return (args, [])
 
 
-def cmd_instance(cmd, args):
-    entries, _ = extract_instances(split_args(args)[0], NORSU_DIR)
+def cmd_instance(args, _):
+    cmd = args.command
 
     # safety pin (see config)
-    if not args and cmd == 'remove' and \
+    if not args.target and cmd == 'remove' and \
        CONFIG['commands']['remove']['require_args']:
         raise Error('By default, this command requires arguments')
 
-    for entry in entries:
-        print('Selected instance:', Style.bold(entry))
+    for target in preprocess_targets(args.target):
+        print('Selected instance:', Style.bold(target))
 
-        instance = Instance(entry)
+        instance = Instance(target)
 
         cmds = {
             'install': lambda: instance.install(),
@@ -89,45 +87,39 @@ def cmd_instance(cmd, args):
         print()
 
 
-def cmd_run(_, args):
-    args, opts = extract_entries(split_args(args)[0])
+def cmd_run(args, _):
+    instance = Instance(args.target)
+    port = args.port
+    dbname = args.dbname
 
-    if len(args) != 1:
-        raise Error('Expected to see 1 target')
-
-    grab_pgxs = '--pgxs' in opts
-    run_psql = '--psql' in opts
-
-    pg = args[0]
-    instance = Instance(pg)
-
-    with run_temp(instance, grab_pgxs=grab_pgxs) as node:
+    with run_temp(instance, grab_pgxs=args.pgxs, port=port) as node:
         print('dir:', node.base_dir)
         print('port:', node.port)
-        print()
 
-        if run_psql:
+        if args.psql:
+            print('dbname:', dbname)
+            print()
+
             args = [
                 instance.get_bin_path('psql'),
-                '-d', 'postgres',
-                '-p', str(node.port)
+                '-p', str(node.port),
+                '-d', dbname,
             ]
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
             execute(args, output=ExecOutput.Stdout)
         else:
+            print()
             print('Press Ctrl+C to exit')
             while True:
                 sleep(1)
 
 
-def cmd_search(_, args):
-    entries, _ = extract_instances(split_args(args)[0], NORSU_DIR)
+def cmd_search(args, _):
+    for target in preprocess_targets(args.target):
+        print('Search query:', Style.bold(target))
 
-    for entry in entries:
-        name = InstanceName(entry)
+        name = InstanceName(target)
         patterns = name.to_patterns()
-
-        print('Search query:', Style.bold(entry))
-
         refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
 
         for ref in sort_refs(refs, name):
@@ -136,24 +128,18 @@ def cmd_search(_, args):
         print()
 
 
-def cmd_purge(_, args):
-    entries, _ = extract_instances(split_args(args)[0], WORK_DIR)
-
-    for entry in entries:
-        instance = Instance(entry)
-
+def cmd_purge(args, _):
+    for target in preprocess_targets(args.target, WORK_DIR):
+        instance = Instance(target)
         if not os.path.exists(instance.main_dir):
             rmtree(path=instance.work_dir, ignore_errors=True)
 
 
-def cmd_pgxs(_, args):
-    main_args, make_args = split_args(args)
-
-    pgs, cmd_opts = extract_instances(main_args, NORSU_DIR)
-    targets, make_opts = extract_entries(make_args)
+def cmd_pgxs(main_args, make_args):
+    make_targets, make_opts = split_make_args(make_args)
     work_dir = os.getcwd()
 
-    for pg in pgs:
+    for pg in preprocess_targets(main_args.target):
         instance = Instance(pg)
         pg_config = instance.get_bin_path('pg_config')
         extension = Extension(work_dir=work_dir, pg_config=pg_config)
@@ -165,84 +151,100 @@ def cmd_pgxs(_, args):
             continue
 
         # should we start PostgreSQL?
-        if any(k in cmd_opts for k in ['-R', '--run-pg']):
+        if main_args.run_pg:
             mk_var = 'EXTRA_REGRESS_OPTS'
+            port = main_args.run_pg_port
 
             # run commands under a running PostgreSQL instance
-            with run_temp(instance, grab_pgxs=True) as node:
+            with run_temp(instance, grab_pgxs=True, port=port) as node:
                 # make pg_regress aware of non-default port
                 make_opts.append('{}+=--port={}'.format(mk_var, node.port))
-                extension.make(targets=targets, options=make_opts)
+                extension.make(targets=make_targets, options=make_opts)
         else:
-            extension.make(targets=targets, options=make_opts)
+            extension.make(targets=make_targets, options=make_opts)
 
         print()  # splitter
 
 
-def cmd_path(_, args):
-    entries, _ = extract_instances(split_args(args)[0], NORSU_DIR)
-
-    for entry in entries:
-        print(Instance(entry).main_dir)
+def cmd_path(args, _):
+    for target in preprocess_targets(args.target):
+        print(Instance(target).main_dir)
 
 
-def cmd_help(*_):
-    name = os.path.basename(sys.argv[0])
-    print('{} -- PostgreSQL builds manager'.format(Style.blue(name)))
-    print()
-    print('Usage:')
-    print('\t{} <command> [options]'.format(name))
-    print()
-    print('Commands:')
-
-    for method in METHODS.keys():
-        print('\t{}'.format(method))
-
-    print()
-    print('Examples:')
-    print('\t{} install 9.6.5 10 master'.format(name))
-    print('\t{} pgxs 9.6 9.5 -- install'.format(name))
-    print('\t{} pull REL_10_STABLE'.format(name))
-    print('\t{} remove 9.5'.format(name))
-    print('\t{} status'.format(name))
+def cmd_version(*_):
+    print(__version__)
 
 
 def main():
-    args = sys.argv[1:]
-    if len(args) == 0:
-        args = ['install']
+    # split args using '--'
+    args, extra = split_args_extra(sys.argv)
 
-    command = args[0]
-    method = METHODS.get(command)
+    examples = """
+examples:
+    {0} install  9.6.5  10  master
+    {0} pgxs     9.6   9.5  --  install -j4
+    {0} pull     REL_10_STABLE
+    {0} remove   9.5
+    {0} status
+    """.format(os.path.basename(args[0]))
 
-    if command == '--version':
-        print(__version__)
-        exit(0)
+    parser = argparse.ArgumentParser(
+        description='PostgreSQL builds manager v{}'.format(__version__),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=examples)
 
-    if command == '--help':
-        cmd_help()
-        exit(0)
+    parser.add_argument('-v', '--version', action='store_true')
+    parser.set_defaults(func=cmd_version)
+
+    subparsers = parser.add_subparsers(title='commands', dest='command')
+
+    p_install = subparsers.add_parser('install', help='build & install a list of versions')
+    p_install.add_argument('target', nargs='*')
+    p_install.set_defaults(func=cmd_instance)
+
+    p_remove = subparsers.add_parser('remove', help='remove specified builds')
+    p_remove.add_argument('target', nargs='*')
+    p_remove.set_defaults(func=cmd_instance)
+
+    p_status = subparsers.add_parser('status', help='show some info for each build installed')
+    p_status.add_argument('target', nargs='*')
+    p_status.set_defaults(func=cmd_instance)
+
+    p_pull = subparsers.add_parser('pull', help='pull latest changes from git repos')
+    p_pull.add_argument('target', nargs='*')
+    p_pull.set_defaults(func=cmd_instance)
+
+    p_search = subparsers.add_parser('search', help='find matching branches in git repos')
+    p_search.add_argument('target', nargs='*')
+    p_search.set_defaults(func=cmd_search)
+
+    p_purge = subparsers.add_parser('purge')
+    p_purge.add_argument('target', nargs='*', help='remove orphaned cloned repos')
+    p_purge.set_defaults(func=cmd_purge)
+
+    p_pgxs = subparsers.add_parser('pgxs', help='run "make USE_PGXS=1 ..." in current dir')
+    p_pgxs.add_argument('target', nargs='*')
+    p_pgxs.add_argument('-R', '--run-pg', action='store_true', help='run temp instance')
+    p_pgxs.add_argument('--run-pg-port', type=int, help='port to be used for temp instance')
+    p_pgxs.set_defaults(func=cmd_pgxs)
+
+    p_run = subparsers.add_parser('run', help='run a temp instance of PostgreSQL')
+    p_run.add_argument('target')
+    p_run.add_argument('--psql', action='store_true', help='run PSQL after PG has started')
+    p_run.add_argument('--pgxs', action='store_true', help='grab PGXS config as well')
+    p_run.add_argument('--dbname', default='postgres', help='database name for PSQL')
+    p_run.add_argument('--port', type=int, help='port to be used for this instance')
+    p_run.set_defaults(func=cmd_run)
+
+    p_path = subparsers.add_parser('path', help='show paths to the specified builds')
+    p_path.add_argument('target', nargs='*')
+    p_path.set_defaults(func=cmd_path)
 
     try:
-        if method is None:
-            raise Error('Unknown command {}'.format(command))
-        method(command, args[1:])
+        parsed_args = parser.parse_args(args[1:])
+        parsed_args.func(parsed_args, extra)
     except KeyboardInterrupt:
         pass
     except Error as e:
         print(Style.red(str(e)))
         exit(1)
-
-
-METHODS = {
-    'install': cmd_instance,
-    'remove': cmd_instance,
-    'status': cmd_instance,
-    'pull': cmd_instance,
-    'run': cmd_run,
-    'search': cmd_search,
-    'purge': cmd_purge,
-    'pgxs': cmd_pgxs,
-    'path': cmd_path,
-    'help': cmd_help,
-}
