@@ -84,7 +84,7 @@ def cmd_instance(args, _):
         # execute command
         cmds[cmd]()
 
-        print()
+        print()  # splitter
 
 
 def cmd_run(args, _):
@@ -125,7 +125,7 @@ def cmd_search(args, _):
         for ref in sort_refs(refs, name):
             print('\t', ref.name)
 
-        print()
+        print()  # splitter
 
 
 def cmd_purge(args, _):
@@ -171,10 +171,6 @@ def cmd_path(args, _):
         print(Instance(target).main_dir)
 
 
-def cmd_version(*_):
-    print(__version__)
-
-
 def main():
     # split args using '--'
     args, extra = split_args_extra(sys.argv)
@@ -193,8 +189,7 @@ examples:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=examples)
 
-    parser.add_argument('-v', '--version', action='store_true')
-    parser.set_defaults(func=cmd_version)
+    parser.set_defaults(func=None)
 
     subparsers = parser.add_subparsers(title='commands', dest='command')
 
@@ -242,7 +237,13 @@ examples:
 
     try:
         parsed_args = parser.parse_args(args[1:])
-        parsed_args.func(parsed_args, extra)
+        command = parsed_args.func
+
+        if command:
+            # execute a suitable command
+            command(parsed_args, extra)
+        else:
+            parser.print_help()
     except KeyboardInterrupt:
         pass
     except Error as e:

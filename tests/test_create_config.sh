@@ -3,7 +3,7 @@ set -v
 export NORSU_PATH="$PWD/pg"
 
 # run with default options
-norsu
+norsu status
 
 # check files
 if [ -e "$NORSU_PATH" ]; then echo OK; fi
