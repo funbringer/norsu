@@ -4,6 +4,7 @@ import sys
 from shutil import rmtree
 from time import sleep
 
+from . import __version__
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
 from .extension import Extension
@@ -212,6 +213,10 @@ def main():
 
     command = args[0]
     method = METHODS.get(command)
+
+    if command == '--version':
+        print(__version__)
+        exit(0)
 
     if command == '--help':
         cmd_help()
