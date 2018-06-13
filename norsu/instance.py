@@ -315,6 +315,9 @@ def run_temp(instance, cwd=None, grab_pgxs=False, **kwargs):
     pg_config = instance.get_bin_path('pg_config')
     temp_conf = ''
 
+    if not os.path.exists(pg_config):
+        raise Error('Failed to find pg_config at {}'.format(pg_config))
+
     # HACK: help testgres find our instance
     os.environ['PG_CONFIG'] = pg_config
 

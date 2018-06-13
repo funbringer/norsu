@@ -93,27 +93,28 @@ def cmd_run(_, args):
     args, opts = extract_entries(split_args(args)[0])
 
     if len(args) != 1:
-        raise Error('Expected to see 1 name')
+        raise Error('Expected to see 1 target')
 
     grab_pgxs = '--pgxs' in opts
     run_psql = '--psql' in opts
 
-    instance = Instance(args[0])
+    pg = args[0]
+    instance = Instance(pg)
 
     with run_temp(instance, grab_pgxs=grab_pgxs) as node:
+        print('dir:', node.base_dir)
+        print('port:', node.port)
+        print()
+
         if run_psql:
             args = [
                 instance.get_bin_path('psql'),
                 '-d', 'postgres',
                 '-p', str(node.port)
             ]
-
             execute(args, output=ExecOutput.Stdout)
         else:
-            print('dir:', node.base_dir)
-            print('port:', node.port)
             print('Press Ctrl+C to exit')
-
             while True:
                 sleep(1)
 
