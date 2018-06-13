@@ -6,7 +6,7 @@ install_requires = ['toml', 'testgres']
 
 setup(
     name='norsu',
-    version='0.1',
+    version='0.2',
     packages=['norsu'],
     package_data={'norsu': ['data/*']},
     license='MIT',
