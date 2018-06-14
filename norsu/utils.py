@@ -1,5 +1,6 @@
 import os
 import shlex
+import signal
 import subprocess
 
 from enum import Enum
@@ -14,12 +15,11 @@ class ExecOutput(Enum):
     Devnull = subprocess.DEVNULL
 
 
-def execute(args, cwd=None, env=None, error=True, output=ExecOutput.Pipe):
+def execute(args, error=True, output=ExecOutput.Pipe, **kwargs):
     p = subprocess.Popen(args,
-                         cwd=cwd,
-                         env=env,
                          stdout=output.value,
-                         stderr=subprocess.STDOUT)
+                         stderr=subprocess.STDOUT,
+                         **kwargs)
 
     if output == ExecOutput.Pipe:
         out, _ = p.communicate()
@@ -54,3 +54,23 @@ def str_args_to_dict(a):
         k, _, v = arg.partition('=')
         result[k] = v
     return result
+
+
+def give_terminal_to(pgid):
+    signals = {
+        signal.SIGTTOU,
+        signal.SIGTTIN,
+        signal.SIGTSTP,
+        signal.SIGCHLD,
+    }
+
+    old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, signals)
+    try:
+        os.tcsetpgrp(2, pgid)
+        return True
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return False
+    finally:
+        signal.pthread_sigmask(signal.SIG_SETMASK, old_mask)

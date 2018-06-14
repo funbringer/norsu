@@ -1,7 +1,7 @@
 import argparse
 import os
-import signal
 import sys
+import subprocess
 
 from shutil import rmtree
 from time import sleep
@@ -12,17 +12,13 @@ from .exceptions import Error
 from .extension import Extension
 from .git import find_relevant_refs
 from .terminal import Style
+from .utils import partition, give_terminal_to
 
 from .instance import \
     Instance, \
     InstanceName, \
     sort_refs, \
     run_temp
-
-from .utils import \
-    partition, \
-    execute, \
-    ExecOutput
 
 
 def preprocess_targets(raw_targets, dir=NORSU_DIR):
@@ -105,8 +101,9 @@ def cmd_run(args, _):
                 '-p', str(node.port),
                 '-d', dbname,
             ]
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
-            execute(args, output=ExecOutput.Stdout)
+            p = subprocess.Popen(args, preexec_fn=os.setpgrp)
+            give_terminal_to(p.pid)  # give PTS control to psql
+            p.wait()                 # wait for psql to finish
         else:
             print()
             print('Press Ctrl+C to exit')
