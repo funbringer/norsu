@@ -4,6 +4,7 @@ import shlex
 from pkg_resources import resource_filename
 
 from .config import CONFIG, TOOL_MAKE
+from .exceptions import Error
 from .terminal import Style
 from .utils import execute, ExecOutput
 
@@ -25,16 +26,14 @@ class Extension:
         opts = options[:]
 
         # append compiler options, if needed (e.g. for scan_build)
-        mk_vars = []
         for env in ['CC', 'CXX']:
             if env in os.environ:
-                mk_vars.append('{}={}'.format(env, os.environ.get(env)))
+                opts.append('{}={}'.format(env, os.environ.get(env)))
 
         for target in targets:
             # print simplified command
-            quoted_vars = ' '.join([shlex.quote(x) for x in mk_vars])
             quoted_opts = ' '.join([shlex.quote(x) for x in opts])
-            s = '$ make {} {} {}'.format(quoted_vars, quoted_opts, target)
+            s = '$ make {} {}'.format(quoted_opts, target)
             print(Style.green(s))
 
             args = [
@@ -43,7 +42,6 @@ class Extension:
                 'PG_CONFIG={}'.format(self.pg_config),
             ]
 
-            args.extend(mk_vars)
             args.extend(opts)
             args.append(target)
 
@@ -67,5 +65,8 @@ class Extension:
             'print-{}'.format(name)
         ]
 
-        # return var's value
-        return execute(args).partition('=')[2]
+        try:
+            # return var's value
+            return execute(args).partition('=')[2]
+        except Error:
+            raise Error('Failed to get variable {} from Makefile'.format(name))
