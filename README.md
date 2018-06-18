@@ -53,10 +53,17 @@ The config file is located at `$NORSU_PATH/.norsu.toml` (by default, `$NORSU_PAT
 In general,
 
 * If a command accepts `[target]...`, it will default to all available builds if no target is specified;
-* Targets may be versions (e.g. `10`, `9.6.8`, `9.5`) or (parts of) branch names (e.g. `master`, `REL_10`);
-* Target might be positive (e.g. `master`, `9.6.5`, `10`) and negative (i.e. exclude some build, e.g. `^master`);
 * An interrupted command will try to continue where it left off next time;
 * Time-consuming commands print steps they're taking to achieve goals;
+
+Target is a build's name, which is also used as install directory name: each build is installed to `$NORSU_PATH/target`.
+Here's a rule that describes possible targets:
+
+**`[^]target[:search]`**
+
+* By default, target's name is used both as install dir name and branch search strings, but you can separate those using `:`;
+* Target might be positive (e.g. `master`, `9.6.5`, `10`) and negative (i.e. exclude some build, e.g. `^master`);
+* Search strings may be versions (e.g. `10`, `9.6.8`, `9.5`) or (parts of) branch names (e.g. `master`, `REL_10`);
 
 Here's a non-exhaustive list of provided commands:
 

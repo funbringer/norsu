@@ -134,6 +134,14 @@ class GitRepo:
         except ValueError:
             pass
 
+    def add_excludes(self, pattern):
+        excludes = os.path.join(self.work_dir, '.git', 'info', 'exclude')
+        with open(excludes, 'r+') as f:
+            lines = f.readlines()
+            if not any(pattern in s for s in lines):
+                f.seek(0, os.SEEK_END)
+                f.write(pattern)
+
 
 def find_relevant_refs(repos, patterns):
     refs = []

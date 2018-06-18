@@ -51,7 +51,7 @@ def sort_refs(refs, name):
             return SortRefByVersion(x)
         else:
             # pre-calculated for better performance
-            name_ngram = SortRefBySimilarity.ngram(name.value)
+            name_ngram = SortRefBySimilarity.ngram(name.query)
             return SortRefBySimilarity(x, name_ngram)
 
     return sorted(refs, reverse=True, key=to_key)
@@ -66,20 +66,27 @@ class InstanceName:
     rx_is_ver = re.compile(r'\d+([._]\d+)*')
     rx_sep = re.compile(r'(\.|_)')
 
-    def __init__(self, name):
-        for s in ['/']:
-            if s in name:
-                raise Error('Wrong name {}'.format(name))
+    @staticmethod
+    def _check_str(s):
+        pred1 = len(s.strip()) > 0
+        pred2 = any(c.isalnum() for c in s)
 
-        self.value = name
+        if not (pred1 and pred2):
+            raise Error('Wrong identifier: {}'.format(s))
 
-        if self.rx_is_ver.match(name):
+        return s
+
+    def __init__(self, name, query=None):
+        self.value = self._check_str(name)
+        self.query = self._check_str(query or name)
+
+        if self.rx_is_ver.match(self.query):
             self.type = InstanceNameType.Version
         else:
             self.type = InstanceNameType.Branch
 
     def to_patterns(self):
-        pattern = self.value
+        pattern = self.query
         result = [pattern]
 
         if self.type == InstanceNameType.Version:
@@ -104,8 +111,8 @@ class Instance:
         else:
             self.name = InstanceName(name)
 
-        self.main_dir = os.path.join(NORSU_DIR, name)
-        self.work_dir = os.path.join(WORK_DIR, name)
+        self.main_dir = os.path.join(NORSU_DIR, str(name))
+        self.work_dir = os.path.join(WORK_DIR, str(name))
         self.git = GitRepo(work_dir=self.work_dir)
 
         # various utility files
@@ -203,9 +210,9 @@ class Instance:
         if not self.ignore:
             try:
                 self._prepare_work_dir()
-                self._make_distclean()
-                self._configure_project()
-                self._make_install()
+                self._maybe_make_distclean()
+                self._maybe_configure_project()
+                self._maybe_make_install()
             except Error as e:
                 step(Style.red(str(e)))
         else:
@@ -270,14 +277,9 @@ class Instance:
             step('Cloned git repo to work dir')
 
         # add .norsu* to git excludes
-        excludes = os.path.join(self.work_dir, '.git', 'info', 'exclude')
-        with open(excludes, 'r+') as f:
-            lines = f.readlines()
-            if not any('.norsu*' in s for s in lines):
-                f.seek(0, os.SEEK_END)
-                f.write('.norsu*')
+        self.git.add_excludes('.norsu*')
 
-    def _configure_project(self):
+    def _maybe_configure_project(self):
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
         if not os.path.exists(makefile):
             args = [
@@ -288,7 +290,7 @@ class Instance:
             execute(args, cwd=self.work_dir, output=ExecOutput.Devnull)
             step('Configured sources')
 
-    def _make_install(self):
+    def _maybe_make_install(self):
         if self.requires_reinstall:
             # update built commit hash
             self.built_commit_hash = self.actual_commit_hash
@@ -303,7 +305,7 @@ class Instance:
 
             step('Built and installed')
 
-    def _make_distclean(self):
+    def _maybe_make_distclean(self):
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
         if os.path.exists(makefile) and self.requires_rebuild:
             args = [TOOL_MAKE, 'distclean']

@@ -33,7 +33,12 @@ def preprocess_targets(raw_targets, dir=NORSU_DIR):
             if not e.startswith('.')
         ])
 
-    return sorted(entries_pos - entries_neg)
+    entries = []
+    for e in sorted(entries_pos - entries_neg):
+        name, _, query = e.partition(':')
+        entries.append(InstanceName(name=name, query=query))
+
+    return entries
 
 
 def split_make_args(args):
@@ -113,13 +118,13 @@ def cmd_run(args, _):
 
 def cmd_search(args, _):
     for target in preprocess_targets(args.target):
-        print('Search query:', Style.bold(target))
+        print('Search query:', Style.bold(target.query),
+              '({})'.format(target.type.name))
 
-        name = InstanceName(target)
-        patterns = name.to_patterns()
+        patterns = target.to_patterns()
         refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
 
-        for ref in sort_refs(refs, name):
+        for ref in sort_refs(refs, target):
             print('\t', ref.name)
 
         print()  # splitter
