@@ -7,6 +7,7 @@ from shutil import rmtree
 from time import sleep
 
 from . import __version__
+from .argparse_actions import ShlexSplitAction
 from .config import NORSU_DIR, WORK_DIR, CONFIG
 from .exceptions import Error
 from .extension import Extension
@@ -62,6 +63,16 @@ def split_args_extra(args):
         return (args, [])
 
 
+def cmd_install(args, _):
+    for target in preprocess_targets(args.target):
+        print('Selected instance:', Style.bold(target))
+
+        Instance(target).install(configure=args.configure,
+                                 extensions=args.extensions)
+
+        print()  # splitter
+
+
 def cmd_instance(args, _):
     cmd = args.command
 
@@ -76,7 +87,6 @@ def cmd_instance(args, _):
         instance = Instance(target)
 
         cmds = {
-            'install': lambda: instance.install(),
             'remove': lambda: instance.remove(),
             'status': lambda: instance.status(),
             'pull': lambda: instance.pull(),
@@ -197,7 +207,9 @@ examples:
 
     p_install = subparsers.add_parser('install', help='build & install a list of versions')
     p_install.add_argument('target', nargs='*')
-    p_install.set_defaults(func=cmd_instance)
+    p_install.add_argument('--configure', action=ShlexSplitAction)
+    p_install.add_argument('--extensions', nargs='*')
+    p_install.set_defaults(func=cmd_install)
 
     p_remove = subparsers.add_parser('remove', help='remove specified builds')
     p_remove.add_argument('target', nargs='*')

@@ -116,7 +116,6 @@ class Instance:
         self.git = GitRepo(work_dir=self.work_dir)
 
         # various utility files
-        self.configure_file = os.path.join(self.main_dir, '.norsu_configure')
         self.ignore_file = os.path.join(self.main_dir, '.norsu_ignore')
 
         # store commit hashes (build + install)
@@ -204,15 +203,16 @@ class Instance:
         line('CONFIGURE:', configure)
 
     def pull(self):
-        self._prepare_work_dir()
+        self._maybe_git_clone_or_pull()
 
-    def install(self):
+    def install(self, configure=None, extensions=None):
         if not self.ignore:
             try:
-                self._prepare_work_dir()
+                self._maybe_git_clone_or_pull()
                 self._maybe_make_distclean()
-                self._maybe_configure_project()
+                self._maybe_configure_project(configure)
                 self._maybe_make_install()
+                self._maybe_make_extensions(extensions)
             except Error as e:
                 step(Style.red(str(e)))
         else:
@@ -225,10 +225,6 @@ class Instance:
                 step('Removed {} dir'.format(name))
 
     def _configure_options(self):
-        if os.path.exists(self.configure_file):
-            with open(self.configure_file, 'r') as f:
-                return shlex.split(f.read())
-
         pg_config_out = self.pg_config(['--configure'])
         if pg_config_out:
             options = shlex.split(pg_config_out)
@@ -236,7 +232,7 @@ class Instance:
 
         return CONFIG['build']['configure_options']
 
-    def _prepare_work_dir(self):
+    def _maybe_git_clone_or_pull(self):
         git_repo = os.path.join(self.work_dir, '.git')
 
         if os.path.exists(git_repo):
@@ -279,16 +275,20 @@ class Instance:
         # add .norsu* to git excludes
         self.git.add_excludes('.norsu*')
 
-    def _maybe_configure_project(self):
+    def _maybe_configure_project(self, configure=None):
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
         if not os.path.exists(makefile):
             args = [
                 './configure',
                 '--prefix={}'.format(self.main_dir)
-            ] + self._configure_options()
+            ]
+
+            configure = configure or self._configure_options()
+            if configure:
+                args.extend(configure)
 
             execute(args, cwd=self.work_dir, output=ExecOutput.Devnull)
-            step('Configured sources')
+            step('Configured sources with', configure)
 
     def _maybe_make_install(self):
         if self.requires_reinstall:
@@ -313,6 +313,37 @@ class Instance:
                     output=ExecOutput.Devnull)
 
             step('Prepared work dir for a new build')
+
+    def _maybe_make_extensions(self, extensions=None):
+        # provide defaults
+        if not extensions:
+            path = os.path.join(self.work_dir, 'contrib')
+            extensions = sorted((
+                e for e in os.listdir(path)
+                if os.path.isdir(os.path.join(path, e))
+            ))
+
+        failed = []
+        missing = []
+
+        for extension in extensions:
+            # is it a contrib?
+            path = os.path.join(self.work_dir, 'contrib', extension)
+            if os.path.exists(path):
+                try:
+                    args = [TOOL_MAKE, 'install']
+                    execute(args, cwd=path, output=ExecOutput.Devnull)
+                    step('Installed contrib', Style.bold(extension))
+                except Error:
+                    failed.append(extension)
+            else:
+                missing.append(extension)
+
+        if failed:
+            raise Error('Failed to install: {}'.format(' '.join(failed)))
+
+        if missing:
+            raise Error('Failed to find: {}'.format(' '.join(missing)))
 
 
 @contextmanager

@@ -67,7 +67,12 @@ Here's a rule that describes possible targets:
 
 Here's a non-exhaustive list of provided commands:
 
-#### `norsu install [target]...`
+#### `norsu install [target]... [cmd_option]...`
+
+Known `cmd_options`:
+
+* `--extension` -- contribs (in-tree extensions) to be installed (e.g. `--extension pg_stat_statements auto_explain`);
+* `--configure` -- `configure` options to be applied before building process takes place;
 
 For each `target`:
 
