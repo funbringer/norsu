@@ -315,6 +315,9 @@ class Instance:
             step('Prepared work dir for a new build')
 
     def _maybe_make_extensions(self, extensions=None):
+        if extensions is None:
+            return
+
         # provide defaults
         if not extensions:
             path = os.path.join(self.work_dir, 'contrib')
