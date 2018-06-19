@@ -5,7 +5,7 @@ import shlex
 from contextlib import contextmanager
 from enum import Enum
 from shutil import rmtree
-from testgres import get_new_node
+from testgres import get_new_node, configure_testgres
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG, TOOL_MAKE
 from .exceptions import Error
@@ -377,6 +377,9 @@ def run_temp(instance, cwd=None, grab_pgxs=False, **kwargs):
 
     # HACK: help testgres find our instance
     os.environ['PG_CONFIG'] = pg_config
+
+    # disable instance caching
+    configure_testgres(cache_initdb=False)
 
     # Grab extra extension options
     if grab_pgxs:
