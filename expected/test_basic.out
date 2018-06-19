@@ -2,7 +2,7 @@
 export NORSU_PATH="$PWD/pg"
 
 # install instance
-norsu install master
+norsu install master --extensions auto_explain
 Selected instance: master
 	=> No work dir, choosing repo & branch
 	=> Selected repo git://git.postgresql.org/git/postgresql.git
@@ -10,6 +10,7 @@ Selected instance: master
 	=> Cloned git repo to work dir
 	=> Configured sources with ['CFLAGS=-g3', '--enable-cassert']
 	=> Built and installed
+	=> Installed contrib auto_explain
 
 
 # show configure flags

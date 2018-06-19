@@ -3,7 +3,7 @@ set -v
 export NORSU_PATH="$PWD/pg"
 
 # install instance
-norsu install master
+norsu install master --extensions auto_explain
 
 # show configure flags
 "$(norsu path master)/bin/pg_config" > /dev/null
