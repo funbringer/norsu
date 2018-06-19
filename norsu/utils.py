@@ -74,3 +74,8 @@ def give_terminal_to(pgid):
         return False
     finally:
         signal.pthread_sigmask(signal.SIG_SETMASK, old_mask)
+
+
+def path_exists(path):
+    if os.path.exists(path):
+        return path

@@ -21,6 +21,7 @@ from .git import \
 from .utils import \
     execute, \
     ExecOutput, \
+    path_exists, \
     try_read_file, \
     str_args_to_dict
 
@@ -30,7 +31,7 @@ def step(*args):
 
 
 def line(name, value=None):
-    print('\t', name, '\t{}'.format(value) if value is not None else '')
+    print('\t', name, '\t{}'.format(value))
 
 
 def read_commit_file(path):
@@ -41,7 +42,7 @@ def read_commit_file(path):
 
 def write_commit_file(path, value):
     with open(path, 'w') as f:
-        f.write(value)
+        f.write(value or '')
 
 
 def sort_refs(refs, name):
@@ -151,11 +152,17 @@ class Instance:
     def requires_reinstall(self):
         # NOTE: remember that re-build != re-install!
         # We might already have a fresh build in work dir
-        return self.installed_commit_hash != self.actual_commit_hash
+        ic = self.installed_commit_hash
+        ac = self.actual_commit_hash
+
+        return ic != ac or not ic or not ac
 
     @property
     def requires_rebuild(self):
-        return self.built_commit_hash != self.actual_commit_hash
+        bc = self.built_commit_hash
+        ac = self.actual_commit_hash
+
+        return bc != ac or not bc or not ac
 
     def get_bin_path(self, name):
         return os.path.join(self.main_dir, 'bin', name)
@@ -177,19 +184,13 @@ class Instance:
             status = Style.red('Not installed')
 
         line('Status:', status)
-
-        if os.path.exists(self.main_dir):
-            line('Main dir:', self.main_dir)
-        else:
-            line('Main dir:', 'none')
+        line('Main dir:', path_exists(self.main_dir))
+        line('Work dir:', path_exists(self.work_dir))
 
         if os.path.exists(self.work_dir):
-            line('Work dir:', self.work_dir)
             branch = self.git.branch or self.git.tag
             if branch:
                 line('Branch:', branch)
-        else:
-            line('Work dir:', 'none')
 
         pg_config_out = self.pg_config(['--version'])
         if pg_config_out:
@@ -209,9 +210,9 @@ class Instance:
         if not self.ignore:
             try:
                 self._maybe_git_clone_or_pull()
-                self._maybe_make_distclean()
+                self._maybe_make_distclean(configure)
                 self._maybe_configure_project(configure)
-                self._maybe_make_install()
+                self._maybe_make_install(configure)
                 self._maybe_make_extensions(extensions)
             except Error as e:
                 step(Style.red(str(e)))
@@ -231,6 +232,10 @@ class Instance:
             return [x for x in options if not x.startswith('--prefix')]
 
         return CONFIG['build']['configure_options']
+
+    def _configure_options_are_new(self, opts):
+        # operation's required if new non-trivial configure flags
+        return opts is not None and opts != self._configure_options()
 
     def _maybe_git_clone_or_pull(self):
         git_repo = os.path.join(self.work_dir, '.git')
@@ -283,15 +288,36 @@ class Instance:
                 '--prefix={}'.format(self.main_dir)
             ]
 
-            configure = configure or self._configure_options()
+            # NOTE: [] is a valid choice
+            if configure is None:
+                configure = self._configure_options()
+
             if configure:
                 args.extend(configure)
 
             execute(args, cwd=self.work_dir, output=ExecOutput.Devnull)
             step('Configured sources with', configure)
 
-    def _maybe_make_install(self):
-        if self.requires_reinstall:
+    def _maybe_make_distclean(self, configure=None):
+        makefile = os.path.join(self.work_dir, 'GNUmakefile')
+        new_conf_opts = self._configure_options_are_new(configure)
+
+        if os.path.exists(makefile) and \
+           (new_conf_opts or self.requires_rebuild):
+
+            # reset built commit hash
+            self.built_commit_hash = None
+
+            args = [TOOL_MAKE, 'distclean']
+            execute(args, cwd=self.work_dir, error=False,
+                    output=ExecOutput.Devnull)
+
+            step('Prepared work dir for a new build')
+
+    def _maybe_make_install(self, configure=None):
+        new_conf_opts = self._configure_options_are_new(configure)
+
+        if new_conf_opts or self.requires_reinstall:
             # update built commit hash
             self.built_commit_hash = self.actual_commit_hash
 
@@ -304,15 +330,6 @@ class Instance:
             self.installed_commit_hash = self.actual_commit_hash
 
             step('Built and installed')
-
-    def _maybe_make_distclean(self):
-        makefile = os.path.join(self.work_dir, 'GNUmakefile')
-        if os.path.exists(makefile) and self.requires_rebuild:
-            args = [TOOL_MAKE, 'distclean']
-            execute(args, cwd=self.work_dir, error=False,
-                    output=ExecOutput.Devnull)
-
-            step('Prepared work dir for a new build')
 
     def _maybe_make_extensions(self, extensions=None):
         if extensions is None:
