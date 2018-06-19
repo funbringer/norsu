@@ -3,7 +3,7 @@ export NORSU_PATH="$PWD/pg"
 
 # search for an old release
 norsu search 9.2
-Search query: 9.2
+Search query: 9.2 (Version)
 	 REL9_2_STABLE
 	 REL9_2_24
 	 REL9_2_23

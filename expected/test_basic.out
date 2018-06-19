@@ -8,7 +8,7 @@ Selected instance: master
 	=> Selected repo git://git.postgresql.org/git/postgresql.git
 	=> Selected branch master
 	=> Cloned git repo to work dir
-	=> Configured sources
+	=> Configured sources with ['CFLAGS=-g3', '--enable-cassert']
 	=> Built and installed
 
 
