@@ -200,6 +200,17 @@ class Instance:
         if commit:
             line('Commit:', commit)
 
+        pg_config_manual = os.path.join(self.main_dir,
+                                        'include', 'pg_config_manual.h')
+        if os.path.exists(pg_config_manual):
+            with open(pg_config_manual, 'r') as f:
+                for l in f:
+                    if l.startswith('#define MEMORY_CONTEXT_CHECKING'):
+                        break  # too late
+                    if l.startswith('#define USE_VALGRIND'):
+                        line('Valgrind:', 'Enabled')
+                        break  # OK
+
         configure = self._configure_options()
         line('CONFIGURE:', configure)
 
