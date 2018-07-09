@@ -156,7 +156,7 @@ def cmd_pgxs(main_args, make_args):
         pg_config = instance.get_bin_path('pg_config')
         extension = Extension(work_dir=work_dir, pg_config=pg_config)
 
-        if instance.installed_commit_hash:
+        if os.path.exists(pg_config):
             print('Executing against instance', Style.bold(pg), '\n')
         else:
             print(Style.yellow('Cannot find instance {}\n'.format(pg)))
