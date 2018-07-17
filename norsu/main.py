@@ -68,7 +68,8 @@ def cmd_install(args, _):
         print('Selected instance:', Style.bold(target))
 
         Instance(target).install(configure=args.configure,
-                                 extensions=args.extensions)
+                                 extensions=args.extensions,
+                                 update=not args.no_update)
 
         print()  # splitter
 
@@ -207,8 +208,9 @@ examples:
 
     p_install = subparsers.add_parser('install', help='build & install a list of versions')
     p_install.add_argument('target', nargs='*')
-    p_install.add_argument('--configure', action=ShlexSplitAction)
-    p_install.add_argument('--extensions', nargs='*')
+    p_install.add_argument('--configure', action=ShlexSplitAction, help='options for ./configure')
+    p_install.add_argument('--extensions', nargs='*', help='also install listed exceptions')
+    p_install.add_argument('--no-update', '-E', action='store_true', help='do not pull and install updates')
     p_install.set_defaults(func=cmd_install)
 
     p_remove = subparsers.add_parser('remove', help='remove specified builds')

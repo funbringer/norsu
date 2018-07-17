@@ -217,10 +217,17 @@ class Instance:
     def pull(self):
         self._maybe_git_clone_or_pull()
 
-    def install(self, configure=None, extensions=None):
+    def install(self, configure=None, extensions=None, update=True):
         if not self.ignore:
+            has_work_dir = os.path.exists(self.work_dir)
+            has_main_dir = os.path.exists(self.main_dir)
+
+            if has_main_dir and not has_work_dir:
+                step(Style.yellow('This is a standalone build, skipping'))
+                return  # this is a standalone build
+
             try:
-                self._maybe_git_clone_or_pull()
+                self._maybe_git_clone_or_pull(update)
                 self._maybe_make_distclean(configure)
                 self._maybe_configure_project(configure)
                 self._maybe_make_install(configure)
@@ -248,10 +255,29 @@ class Instance:
         # operation's required if new non-trivial configure flags
         return opts is not None and opts != self._configure_options()
 
-    def _maybe_git_clone_or_pull(self):
+    def _maybe_git_clone_or_pull(self, update):
         git_repo = os.path.join(self.work_dir, '.git')
 
-        if os.path.exists(git_repo):
+        if not os.path.exists(git_repo):
+            step('No work dir, choosing repo & branch')
+
+            patterns = self.name.to_patterns()
+            refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
+
+            if not refs:
+                raise Error('No branch found for {}'.format(self.name))
+
+            # select the most relevant branch
+            ref = sort_refs(refs, self.name)[0]
+            step('Selected repo', Style.bold(ref.repo))
+            step('Selected branch', Style.bold(ref.name))
+
+            # finally, clone repo
+            self.git.clone(url=ref.repo, branch=ref.name)
+            step('Cloned git repo to work dir')
+
+        # Are we allowed to update this instance?
+        elif update:
             branch = self.git.branch
 
             # pull latest changes
@@ -270,23 +296,6 @@ class Instance:
 
                 step('Current branch:', Style.bold(branch))
                 step('Installed build is out of date{}'.format(fresh_commits))
-        else:
-            step('No work dir, choosing repo & branch')
-
-            patterns = self.name.to_patterns()
-            refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
-
-            if not refs:
-                raise Error('No branch found for {}'.format(self.name))
-
-            # select the most relevant branch
-            ref = sort_refs(refs, self.name)[0]
-            step('Selected repo', Style.bold(ref.repo))
-            step('Selected branch', Style.bold(ref.name))
-
-            # finally, clone repo
-            self.git.clone(url=ref.repo, branch=ref.name)
-            step('Cloned git repo to work dir')
 
         # add .norsu* to git excludes
         self.git.add_excludes('.norsu*')
