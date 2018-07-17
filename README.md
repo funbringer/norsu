@@ -73,6 +73,7 @@ Known `cmd_options`:
 
 * `--extension` -- contribs (in-tree extensions) to be installed (e.g. `--extension pg_stat_statements auto_explain`);
 * `--configure` -- `configure` options to be applied before building process takes place;
+* `--no-update` -- do not pull and install updates (e.g. just install missing extensions, see `--extension`);
 
 For each `target`:
 
