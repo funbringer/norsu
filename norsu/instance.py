@@ -301,7 +301,7 @@ class Instance:
         # add .norsu* to git excludes
         self.git.add_excludes('.norsu*')
 
-    def _maybe_configure_project(self, configure=None):
+    def _maybe_configure_project(self, configure):
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
         if not os.path.exists(makefile):
             args = [
@@ -319,7 +319,7 @@ class Instance:
             execute(args, cwd=self.work_dir, output=ExecOutput.Devnull)
             step('Configured sources with', configure)
 
-    def _maybe_make_distclean(self, configure=None):
+    def _maybe_make_distclean(self, configure):
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
         new_conf_opts = self._configure_options_are_new(configure)
 
@@ -335,7 +335,7 @@ class Instance:
 
             step('Prepared work dir for a new build')
 
-    def _maybe_make_install(self, configure=None):
+    def _maybe_make_install(self, configure):
         new_conf_opts = self._configure_options_are_new(configure)
 
         if new_conf_opts or self.requires_reinstall:
