@@ -99,27 +99,29 @@ def cmd_instance(args, _):
         print()  # splitter
 
 
-def cmd_run(args, _):
-    instance = Instance(args.target)
-    port = args.port
-    dbname = args.dbname
+def cmd_run(main_args, psql_args):
+    instance = Instance(main_args.target)
+    dbname = main_args.dbname
+    port = main_args.port
 
-    with run_temp(instance, grab_pgxs=args.pgxs, port=port) as node:
+    with run_temp(instance, grab_pgxs=main_args.pgxs, port=port) as node:
         print('dir:', node.base_dir)
         print('port:', node.port)
 
-        if args.psql:
+        if main_args.psql:
             print('dbname:', dbname)
             print()
 
-            args = [
+            main_args = [
                 instance.get_bin_path('psql'),
                 '-p', str(node.port),
                 '-d', dbname,
-            ]
-            p = subprocess.Popen(args, preexec_fn=os.setpgrp)
+            ] + psql_args
+            p = subprocess.Popen(main_args, preexec_fn=os.setpgrp)
             give_terminal_to(p.pid)  # give PTS control to psql
             p.wait()                 # wait for psql to finish
+
+            sys.exit(p.returncode)
         else:
             print()
             print('Press Ctrl+C to exit')
