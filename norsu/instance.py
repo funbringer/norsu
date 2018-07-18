@@ -1,8 +1,9 @@
 import os
 import re
 import shlex
+import sys
 
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout
 from enum import Enum
 from shutil import rmtree
 from testgres import get_new_node, configure_testgres
@@ -416,7 +417,12 @@ def run_temp(instance, cwd=None, grab_pgxs=False, **kwargs):
             print('Found custom config:', os.path.basename(path))
 
     with get_new_node(**kwargs) as node:
-        print('Starting temporary PostgreSQL instance...\n')
+        with redirect_stdout(sys.stderr):
+            print('Starting temporary PostgreSQL instance...')
+            print()
+            print('dir:', node.base_dir)
+            print('port:', node.port)
+            print()
 
         # prepare and start a new node
         node.cleanup_on_bad_exit = True

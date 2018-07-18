@@ -105,26 +105,19 @@ def cmd_run(main_args, psql_args):
     port = main_args.port
 
     with run_temp(instance, grab_pgxs=main_args.pgxs, port=port) as node:
-        print('dir:', node.base_dir)
-        print('port:', node.port)
-
         if main_args.psql:
-            print('dbname:', dbname)
-            print()
-
-            main_args = [
+            args = [
                 instance.get_bin_path('psql'),
                 '-p', str(node.port),
                 '-d', dbname,
             ] + psql_args
-            p = subprocess.Popen(main_args, preexec_fn=os.setpgrp)
+            p = subprocess.Popen(args, preexec_fn=os.setpgrp)
             give_terminal_to(p.pid)  # give PTS control to psql
             p.wait()                 # wait for psql to finish
 
             sys.exit(p.returncode)
         else:
-            print()
-            print('Press Ctrl+C to exit')
+            print('Press Ctrl+C to exit', file=sys.stderr)
             while True:
                 sleep(1)
 
@@ -265,5 +258,5 @@ examples:
     except KeyboardInterrupt:
         pass
     except Error as e:
-        print(Style.red(str(e)))
+        print(Style.red(str(e)), file=sys.stderr)
         exit(1)
