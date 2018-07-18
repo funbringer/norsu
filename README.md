@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/funbringer/norsu.svg?branch=master)](https://travis-ci.org/funbringer/norsu)
+[![PyPI version](https://badge.fury.io/py/norsu.svg)](https://badge.fury.io/py/norsu)
+
 ## [WIP] Norsu -- PostgreSQL builds manager
 
 ### Introduction
