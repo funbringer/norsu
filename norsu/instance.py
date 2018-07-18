@@ -215,17 +215,19 @@ class Instance:
         line('CONFIGURE:', configure)
 
     def pull(self):
-        self._maybe_git_clone_or_pull(update=True)
+        if os.path.exists(self.main_dir) and not os.path.exists(self.work_dir):
+            step(Style.yellow('This is a standalone build, skipping'))
+        else:
+            self._maybe_git_clone_or_pull(update=True)
 
     def install(self, configure=None, extensions=None, update=True):
-        if not self.ignore:
-            has_work_dir = os.path.exists(self.work_dir)
-            has_main_dir = os.path.exists(self.main_dir)
+        if self.ignore:
+            step(Style.yellow('Ignored due to .norsu_ignore'))
 
-            if has_main_dir and not has_work_dir:
-                step(Style.yellow('This is a standalone build, skipping'))
-                return  # this is a standalone build
+        elif os.path.exists(self.main_dir) and not os.path.exists(self.work_dir):
+            step(Style.yellow('This is a standalone build, skipping'))
 
+        else:
             try:
                 self._maybe_git_clone_or_pull(update)
                 self._maybe_make_distclean(configure)
@@ -234,8 +236,6 @@ class Instance:
                 self._maybe_make_extensions(extensions)
             except Error as e:
                 step(Style.red(str(e)))
-        else:
-            step(Style.yellow('Ignored due to .norsu_ignore'))
 
     def remove(self):
         for path, name in [(self.main_dir, 'main'), (self.work_dir, 'work')]:
