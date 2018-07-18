@@ -414,7 +414,7 @@ def run_temp(instance, cwd=None, grab_pgxs=False, **kwargs):
         if temp_conf_file:
             path = os.path.join(work_dir, temp_conf_file)
             temp_conf = try_read_file(path)
-            print('Found custom config:', os.path.basename(path))
+            print('Found custom config:', os.path.basename(path), file=sys.stderr)
 
     with get_new_node(**kwargs) as node:
         with redirect_stdout(sys.stderr):
