@@ -215,7 +215,7 @@ class Instance:
         line('CONFIGURE:', configure)
 
     def pull(self):
-        self._maybe_git_clone_or_pull()
+        self._maybe_git_clone_or_pull(update=True)
 
     def install(self, configure=None, extensions=None, update=True):
         if not self.ignore:
