@@ -17,8 +17,8 @@ need for an automation tool.
 Currently, Norsu can:
 
 * install & remove PostgreSQL release- and dev- branches and keep them up-to-date;
-* show various properties of builds (configure flags, commit hash, version etc);
-* search for branches across multiple git repos (specified in a config file);
+* show various properties of builds (`configure` flags, commit hash, version etc);
+* search for branches across multiple git repos (specified in a [config file](#config));
 * install and test PostgreSQL extensions using regression test suites;
 
 ### Setup
@@ -47,6 +47,8 @@ To install a dev version, clone this repo and run:
 pip install --user -U .
 ```
 
+### Config
+
 The config file is located at `$NORSU_PATH/.norsu.toml` (by default, `$NORSU_PATH` is `$HOME/pg`).
 
 ### Usage
@@ -64,23 +66,23 @@ Here's a rule that describes possible targets:
 
 **`[^]target[:search]`**
 
-* By default, target's name is used both as install dir name and branch search strings, but you can separate them using `:`;
-* Target might be positive (e.g. `master`, `9.6.5`, `10`) and negative (i.e. exclude some build, e.g. `^master`);
+* By default, target's name is used both as install dir name and branch search string, but you can separate them using `:`;
+* Target might be positive (e.g. `master`, `9.6.5`, `10`) or negative (i.e. exclude some build, e.g. `^master`);
 * Search strings may be versions (e.g. `10`, `9.6.8`, `9.5`) or (parts of) branch names (e.g. `master`, `REL_10`);
 
-Here's a non-exhaustive list of provided commands:
+Here's a non-exhaustive list of available commands:
 
 #### `norsu install [target]... [cmd_option]...`
 
 Known `cmd_options`:
 
-* `--extension` -- contribs (in-tree extensions) to be installed (e.g. `--extension pg_stat_statements auto_explain`);
-* `--configure` -- `configure` options to be applied before building process takes place;
-* `--no-update` -- do not pull and install updates (e.g. just install missing extensions, see `--extension`);
+* `--extension` -- [contribs (in-tree extensions)](https://www.postgresql.org/docs/current/static/contrib.html) to be installed (e.g. `--extension pg_stat_statements auto_explain`);
+* `--configure` -- [`configure` options](https://www.postgresql.org/docs/current/static/install-procedure.html) to be applied before building process takes place;
+* `--no-update` -- do not pull & install updates (e.g. just install missing extensions, see `--extension`);
 
 For each `target`:
 
-* if **not yet installed**, find a list of **matching** branches in known git repos (specified in config file),
+* if **not yet installed**, find a list of **matching** branches in known git repos (specified in a [config file](#config)),
 select the most relevant one, configure and install it to `$NORSU_PATH/target`.
 
 * if **already installed**, check the branch for updates (new commits), then rebuild and/or reinstall if necessary.
@@ -100,7 +102,7 @@ Selected instance: 9.5
 
 #### `norsu search [target]...`
 
-For each `target`, print a list of matching branches to be used by `install` command.
+For each `target`, print a list of matching branches to be used by the `install` command.
 Currently, a branch matches if `target` occurs in its name (is a substring).
 
 Branches are sorted by decreasing priority:
@@ -126,7 +128,7 @@ Search query: 10
 #### `norsu pull [target]...`
 
 For each `target`, pull new commits from a git repo (but don't re-build anything).
-This command prints the amount of new commits available and updates info shown by `status` command.
+This command prints the amount of new commits available and updates info shown by the `status` command.
 
 #### `norsu status [target]...`
 
@@ -185,11 +187,11 @@ scan-build norsu pgxs 9.5 10 -- clean all
 
 Known `cmd_options`:
 
-* `--pgxs` -- use PG config files provided by extension, as in `pgxs` command
+* `--pgxs` -- use PG config files provided by extension, as in the `pgxs` command
 * `--psql` -- run `psql` connected to a defaut DB after PostgreSQL has started
 
 Create and run a temporary instance (DB) of PostgreSQL using build named `target`.
-The instance will be up & running until command is interrupted (e.g. with `SIGINT`).
+The instance will be up & running until the command is interrupted (e.g. with `SIGINT`).
 
 Example:
 
