@@ -12,17 +12,19 @@ from .config import NORSU_DIR, WORK_DIR, CONFIG, TOOL_MAKE
 from .exceptions import Error
 from .terminal import Style
 
-from .git import \
-    GitRepo, \
-    SortRefByVersion, \
-    SortRefBySimilarity, \
-    find_relevant_refs
+from .git import (
+    GitRepo,
+    SortRefByVersion,
+    SortRefBySimilarity,
+    find_relevant_refs,
+)
 
-from .utils import \
-    execute, \
-    ExecOutput, \
-    path_exists, \
-    try_read_file
+from .utils import (
+    execute,
+    ExecOutput,
+    path_exists,
+    try_read_file,
+)
 
 
 def step(*args):
