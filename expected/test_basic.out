@@ -16,6 +16,15 @@ Selected instance: master
 # show configure flags
 "$(norsu path master)/bin/pg_config" > /dev/null
 
+# run a query
+echo show max_connections | norsu run master \
+	--psql --config <(echo max_connections = 25) \
+	-- -Xatq 2> /dev/null
+echo max_connections = 25
+show max_connections
+ 25
+
+
 # remove only installation
 rm -rf "$(norsu path master)"
 
