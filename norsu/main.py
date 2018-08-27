@@ -13,13 +13,19 @@ from .exceptions import Error
 from .extension import Extension
 from .git import find_relevant_refs
 from .terminal import Style
-from .utils import partition, give_terminal_to
 
-from .instance import \
-    Instance, \
-    InstanceName, \
-    sort_refs, \
-    run_temp
+from .instance import (
+    Instance,
+    InstanceName,
+    sort_refs,
+    run_temp,
+)
+
+from .utils import (
+    partition,
+    give_terminal_to,
+    str_args_to_dict,
+)
 
 
 def preprocess_targets(raw_targets, dir=NORSU_DIR):
@@ -104,7 +110,23 @@ def cmd_run(main_args, psql_args):
     dbname = main_args.dbname
     port = main_args.port
 
-    with run_temp(instance, grab_pgxs=main_args.pgxs, port=port) as node:
+    work_dir = os.getcwd()
+    pg_config = instance.get_bin_path('pg_config')
+
+    config_files = []
+
+    # Grab extra extension options
+    if main_args.pgxs:
+        mk_var = 'EXTRA_REGRESS_OPTS'
+        extension = Extension(work_dir=work_dir, pg_config=pg_config)
+        regress_opts = str_args_to_dict(extension.makefile_var(mk_var))
+        config_files.append(regress_opts.get('--temp-config'))
+
+    # Grab extra PG config files
+    if main_args.config:
+        config_files.extend(main_args.config)
+
+    with run_temp(instance, config_files=config_files, port=port) as node:
         if main_args.psql:
             args = [
                 instance.get_bin_path('psql'),
@@ -236,6 +258,7 @@ examples:
 
     p_run = subparsers.add_parser('run', help='run a temp instance of PostgreSQL')
     p_run.add_argument('target')
+    p_run.add_argument('--config', nargs='*', help='additional config files for PostgreSQL')
     p_run.add_argument('--psql', action='store_true', help='run PSQL after PG has started')
     p_run.add_argument('--pgxs', action='store_true', help='grab PGXS config as well')
     p_run.add_argument('--dbname', default='postgres', help='database name for PSQL')

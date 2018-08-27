@@ -10,7 +10,6 @@ from testgres import get_new_node, configure_testgres
 
 from .config import NORSU_DIR, WORK_DIR, CONFIG, TOOL_MAKE
 from .exceptions import Error
-from .extension import Extension
 from .terminal import Style
 
 from .git import \
@@ -23,8 +22,7 @@ from .utils import \
     execute, \
     ExecOutput, \
     path_exists, \
-    try_read_file, \
-    str_args_to_dict
+    try_read_file
 
 
 def step(*args):
@@ -388,8 +386,7 @@ class Instance:
 
 
 @contextmanager
-def run_temp(instance, cwd=None, grab_pgxs=False, **kwargs):
-    work_dir = cwd or os.getcwd()
+def run_temp(instance, cwd=None, config_files=None, **kwargs):
     pg_config = instance.get_bin_path('pg_config')
     temp_conf = ''
 
@@ -402,19 +399,14 @@ def run_temp(instance, cwd=None, grab_pgxs=False, **kwargs):
     # disable instance caching
     configure_testgres(cache_initdb=False)
 
-    # Grab extra extension options
-    if grab_pgxs:
-        extension = Extension(work_dir=work_dir, pg_config=pg_config)
+    if config_files:
+        configs = []
 
-        mk_var = 'EXTRA_REGRESS_OPTS'
-        regress_opts = str_args_to_dict(extension.makefile_var(mk_var))
-        temp_conf_file = regress_opts.get('--temp-config')
-
-        # read additional config
-        if temp_conf_file:
-            path = os.path.join(work_dir, temp_conf_file)
-            temp_conf = try_read_file(path)
+        for path in config_files:
             print('Found custom config:', os.path.basename(path), file=sys.stderr)
+            configs.append(try_read_file(path))
+
+        temp_conf = '\n'.join(configs)
 
     with get_new_node(**kwargs) as node:
         with redirect_stdout(sys.stderr):

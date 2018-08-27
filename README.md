@@ -187,6 +187,8 @@ Known `cmd_options`:
 
 * `--pgxs` -- use PG config files provided by extension, as in `pgxs` command
 * `--psql` -- run `psql` connected to a defaut DB after PostgreSQL has started
+* `--port` -- bind to a port provided by user (random by default)
+* `--config` -- pass a set of custom config files to a PG cluster
 
 Create and run a temporary instance (DB) of PostgreSQL using build named `target`.
 The instance will be up & running until command is interrupted (e.g. with `SIGINT`).
