@@ -404,7 +404,7 @@ def run_temp(instance, cwd=None, config_files=None, **kwargs):
     if config_files:
         configs = []
 
-        for path in config_files:
+        for path in (f for f in config_files if f is not None):
             print('Found custom config:', os.path.basename(path), file=sys.stderr)
             configs.append(try_read_file(path))
 
