@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/funbringer/norsu.svg?branch=master)](https://travis-ci.org/funbringer/norsu)
 [![PyPI version](https://badge.fury.io/py/norsu.svg)](https://badge.fury.io/py/norsu)
 
-## [WIP] Norsu -- PostgreSQL builds manager
+## Norsu -- PostgreSQL builds manager
 
 ### Introduction
 
@@ -11,7 +11,7 @@ against them.
 
 This might be useful if you're an extension developer and you aim to support
 several major PostgreSQL releases. Over time, running regression test suites
-against a growing number of releases might become a combersome task, hence a
+against a growing number of releases might become a cumbersome task, hence a
 need for an automation tool.
 
 Currently, Norsu can:
@@ -52,8 +52,6 @@ pip install --user -U .
 The config file is located at `$NORSU_PATH/.norsu.toml` (by default, `$NORSU_PATH` is `$HOME/pg`).
 
 ### Usage
-
-> NOTE: the public API **has not been stabilized yet**, it's better to take a look at this page from time to time.
 
 In general,
 
