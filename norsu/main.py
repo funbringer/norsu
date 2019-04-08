@@ -181,10 +181,11 @@ def cmd_pgxs(main_args, make_args):
 
         # should we start PostgreSQL?
         if main_args.run_pg:
+            port = main_args.run_pg_port
             temp_config = extension.get_temp_config()
 
             # run commands under a running PostgreSQL instance
-            with run_temp(instance, config_files=[temp_config]) as node:
+            with run_temp(instance, config_files=[temp_config], port=port) as node:
                 # make pg_regress aware of non-default port
                 make_opts.append('EXTRA_REGRESS_OPTS+=--port=%s' % node.port)
                 extension.make(targets=make_targets, options=make_opts, instance=instance)
