@@ -24,7 +24,6 @@ from .instance import (
 from .utils import (
     partition,
     give_terminal_to,
-    str_args_to_dict,
 )
 
 
@@ -182,7 +181,6 @@ def cmd_pgxs(main_args, make_args):
 
         # should we start PostgreSQL?
         if main_args.run_pg:
-            port = main_args.run_pg_port
             temp_config = extension.get_temp_config()
 
             # run commands under a running PostgreSQL instance

@@ -75,7 +75,7 @@ class Extension:
 
                 isolation_args = [
                     os.path.join(instance.work_dir,
-                        "src/test/isolation/pg_isolation_regress"),
+                                 "src/test/isolation/pg_isolation_regress"),
                     "--temp-instance=%s" % tmpdir,
                     "--inputdir=.",
                     "--outputdir=output_iso",
@@ -94,7 +94,7 @@ class Extension:
                             cwd=self.work_dir,
                             env=os.environ,
                             output=ExecOutput.Stdout)
-                except:
+                except Exception as e:
                     raise
                 finally:
                     if os.path.exists(tmpdir):
