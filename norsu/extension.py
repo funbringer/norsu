@@ -94,8 +94,6 @@ class Extension:
                             cwd=self.work_dir,
                             env=os.environ,
                             output=ExecOutput.Stdout)
-                except Exception as e:
-                    raise
                 finally:
                     if os.path.exists(tmpdir):
                         shutil.rmtree(tmpdir)
