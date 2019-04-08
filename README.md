@@ -175,6 +175,7 @@ norsu pgxs
 norsu pgxs ^master -- clean install -j5
 
 # run regression tests against 9.6.9
+# installcheck (or check) will also run isolation checks in case of 'specs' folder
 norsu pgxs 9.6.9 -R -- installcheck
 
 # check using clang-analyzer for builds 9.6 and 10
