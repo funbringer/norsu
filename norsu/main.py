@@ -118,10 +118,9 @@ def cmd_run(main_args, psql_args):
     # Grab extra extension options
     if main_args.pgxs:
         extension = Extension(work_dir=work_dir, pg_config=pg_config)
-
-        mk_var = 'EXTRA_REGRESS_OPTS'
-        regress_opts = str_args_to_dict(extension.makefile_var(mk_var))
-        config_files.append(regress_opts.get('--temp-config'))
+        temp_config = extension.get_temp_config()
+        if temp_config:
+            config_files.append(temp_config)
 
     # Grab extra PG config files
     if main_args.config:
@@ -184,16 +183,13 @@ def cmd_pgxs(main_args, make_args):
         # should we start PostgreSQL?
         if main_args.run_pg:
             port = main_args.run_pg_port
-
-            mk_var = 'EXTRA_REGRESS_OPTS'
-            regress_opts = str_args_to_dict(extension.makefile_var(mk_var))
-            config_files = [regress_opts.get('--temp-config')]
+            temp_config = extension.get_temp_config()
 
             # run commands under a running PostgreSQL instance
-            with run_temp(instance, config_files=config_files, port=port) as node:
+            with run_temp(instance, config_files=[temp_config]) as node:
                 # make pg_regress aware of non-default port
-                make_opts.append('{}+=--port={}'.format(mk_var, node.port))
-                extension.make(targets=make_targets, options=make_opts)
+                make_opts.append('EXTRA_REGRESS_OPTS+=--port=%s' % node.port)
+                extension.make(targets=make_targets, options=make_opts, instance=instance)
         else:
             extension.make(targets=make_targets, options=make_opts)
 
