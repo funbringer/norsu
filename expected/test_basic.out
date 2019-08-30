@@ -20,7 +20,6 @@ Selected instance: master
 echo show max_connections | norsu run master \
 	--psql --config <(echo max_connections = 25) \
 	-- -Xatq 2> /dev/null
-echo max_connections = 25
 show max_connections
  25
 
