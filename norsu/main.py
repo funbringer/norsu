@@ -28,6 +28,13 @@ from .utils import (
 )
 
 
+def known_targets(dir=NORSU_DIR):
+    return {
+        e for e in os.listdir(dir)
+        if not e.startswith('.')
+    }
+
+
 def preprocess_targets(raw_targets, dir=NORSU_DIR):
     entries_pos, entries_neg = partition(lambda x: x.startswith('^'), raw_targets)
 
@@ -35,10 +42,7 @@ def preprocess_targets(raw_targets, dir=NORSU_DIR):
     entries_pos = set(entries_pos)
 
     if not entries_pos or entries_neg:
-        entries_pos = set([
-            e for e in os.listdir(dir)
-            if not e.startswith('.')
-        ])
+        entries_pos = known_targets(dir=dir)
 
     entries = []
     for e in sorted(entries_pos - entries_neg):
@@ -227,41 +231,41 @@ examples:
 
     subparsers = parser.add_subparsers(title='commands', dest='command')
 
-    p_install = subparsers.add_parser('install', help='build & install a list of versions')
+    p_install = subparsers.add_parser('install', description='build & install a list of versions')
     p_install.add_argument('target', nargs='*')
     p_install.add_argument('--configure', action=ShlexSplitAction, help='options for ./configure')
     p_install.add_argument('--extensions', nargs='*', help='also install listed exceptions')
     p_install.add_argument('--no-update', '-E', action='store_true', help='do not pull and install updates')
     p_install.set_defaults(func=cmd_install)
 
-    p_remove = subparsers.add_parser('remove', help='remove specified builds')
+    p_remove = subparsers.add_parser('remove', description='remove specified builds')
     p_remove.add_argument('target', nargs='*')
     p_remove.set_defaults(func=cmd_instance)
 
-    p_status = subparsers.add_parser('status', help='show some info for each build installed')
+    p_status = subparsers.add_parser('status', description='show some info for each build installed')
     p_status.add_argument('target', nargs='*')
     p_status.set_defaults(func=cmd_instance)
 
-    p_pull = subparsers.add_parser('pull', help='pull latest changes from git repos')
+    p_pull = subparsers.add_parser('pull', description='pull latest changes from git repos')
     p_pull.add_argument('target', nargs='*')
     p_pull.set_defaults(func=cmd_instance)
 
-    p_search = subparsers.add_parser('search', help='find matching branches in git repos')
+    p_search = subparsers.add_parser('search', description='find matching branches in git repos')
     p_search.add_argument('target', nargs='*')
     p_search.set_defaults(func=cmd_search)
 
-    p_purge = subparsers.add_parser('purge')
-    p_purge.add_argument('target', nargs='*', help='remove orphaned cloned repos')
+    p_purge = subparsers.add_parser('purge', description='remove orphaned cloned repos')
+    p_purge.add_argument('target', nargs='*')
     p_purge.set_defaults(func=cmd_purge)
 
-    p_pgxs = subparsers.add_parser('pgxs', help='run "make USE_PGXS=1 ..." in current dir')
+    p_pgxs = subparsers.add_parser('pgxs', description='run "make USE_PGXS=1 ..." in current dir')
     p_pgxs.add_argument('target', nargs='*')
     p_pgxs.add_argument('-R', '--run-pg', action='store_true', help='run temp instance')
     p_pgxs.add_argument('--run-pg-port', type=int, help='port to be used for temp instance')
     p_pgxs.set_defaults(func=cmd_pgxs)
 
-    p_run = subparsers.add_parser('run', help='run a temp instance of PostgreSQL')
-    p_run.add_argument('target')
+    p_run = subparsers.add_parser('run', description='run a temp instance of PostgreSQL')
+    p_run.add_argument('target', choices=known_targets())
     p_run.add_argument('--config', nargs='*', help='additional config files for PostgreSQL')
     p_run.add_argument('--psql', action='store_true', help='run PSQL after PG has started')
     p_run.add_argument('--pgxs', action='store_true', help='grab PGXS config as well')
@@ -269,8 +273,8 @@ examples:
     p_run.add_argument('--port', type=int, help='port to be used for this instance')
     p_run.set_defaults(func=cmd_run)
 
-    p_path = subparsers.add_parser('path', help='show paths to the specified builds')
-    p_path.add_argument('target', nargs='*')
+    p_path = subparsers.add_parser('path', description='show paths to the specified builds')
+    p_path.add_argument('target', nargs='*', choices=known_targets())
     p_path.set_defaults(func=cmd_path)
 
     try:
