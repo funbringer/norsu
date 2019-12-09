@@ -14,14 +14,15 @@ from .terminal import Style
 
 from .git import (
     GitRepo,
-    SortRefByVersion,
     SortRefBySimilarity,
+    SortRefByVersion,
     find_relevant_refs,
 )
 
 from .utils import (
-    execute,
     ExecOutput,
+    eprint,
+    execute,
     path_exists,
     try_read_file,
 )
@@ -238,6 +239,9 @@ class Instance:
             except Error as e:
                 step(Style.red(str(e)))
 
+                # We'd like to print log and exit with error code
+                raise Error(stderr=e.stderr)
+
     def remove(self):
         for path, name in [(self.main_dir, 'main'), (self.work_dir, 'work')]:
             if os.path.exists(path):
@@ -316,7 +320,7 @@ class Instance:
             if configure:
                 args.extend(configure)
 
-            execute(args, cwd=self.work_dir, output=ExecOutput.Devnull)
+            execute(args, cwd=self.work_dir)
             step('Configured sources with', configure)
 
     def _maybe_make_distclean(self, configure):
@@ -345,7 +349,7 @@ class Instance:
             jobs = int(CONFIG['build']['jobs'])
             for arg in ['-j{}'.format(jobs), 'install']:
                 args = [TOOL_MAKE, arg]
-                execute(args, cwd=self.work_dir, output=ExecOutput.Devnull)
+                execute(args, cwd=self.work_dir)
 
             # update installed commit hash
             self.installed_commit_hash = self.actual_commit_hash
@@ -364,27 +368,21 @@ class Instance:
                 if os.path.isdir(os.path.join(path, e))
             ))
 
-        failed = []
-        missing = []
+        failed = False
 
         for extension in extensions:
             # is it a contrib?
             path = os.path.join(self.work_dir, 'contrib', extension)
-            if os.path.exists(path):
-                try:
-                    args = [TOOL_MAKE, 'install']
-                    execute(args, cwd=path, output=ExecOutput.Devnull)
-                    step('Installed contrib', Style.bold(extension))
-                except Error:
-                    failed.append(extension)
-            else:
-                missing.append(extension)
+            try:
+                args = [TOOL_MAKE, 'install']
+                execute(args, cwd=path, output=ExecOutput.Devnull)
+                step('Installed contrib', Style.bold(extension))
+            except Exception:
+                step(Style.red('Failed to install {}'.format(extension)))
+                failed = True
 
         if failed:
-            raise Error('Failed to install: {}'.format(' '.join(failed)))
-
-        if missing:
-            raise Error('Failed to find: {}'.format(' '.join(missing)))
+            raise Error('Failed to install some extensions')
 
 
 @contextmanager
@@ -405,7 +403,7 @@ def run_temp(instance, cwd=None, config_files=None, **kwargs):
         configs = []
 
         for path in (f for f in config_files if f is not None):
-            print('Found custom config:', os.path.basename(path), file=sys.stderr)
+            eprint('Found custom config:', os.path.basename(path))
             configs.append(try_read_file(path))
 
         temp_conf = '\n'.join(configs)
