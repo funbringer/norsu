@@ -12,7 +12,7 @@ def merge_config(current, new):
 
             if not merge_config(current[k], new[k]):
                 if type(current[k]) != type(v):
-                    raise Error('Wrong type of option: {}'.format(k))
+                    raise Error('Wrong option type: {}'.format(k))
                 current[k] = v
 
         return True

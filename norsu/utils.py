@@ -2,6 +2,7 @@ import os
 import shlex
 import signal
 import subprocess
+import sys
 
 from enum import Enum
 
@@ -30,9 +31,10 @@ def execute(args, error=True, output=ExecOutput.Pipe, **kwargs):
 
     if p.returncode != 0:
         if error:
-            raise Error('Failed to execute {}'.format(' '.join(args)))
-    else:
-        return out
+            raise Error('Failed to execute {}'.format(' '.join(args)),
+                        stderr=out)  # attach output if possible
+
+    return out
 
 
 def partition(pred, iterable):
@@ -79,3 +81,11 @@ def give_terminal_to(pgid):
 def path_exists(path):
     if os.path.exists(path):
         return path
+
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
+def limit_lines(string, n):
+    return '\n'.join(string.splitlines()[-n:])

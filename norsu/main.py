@@ -22,8 +22,10 @@ from .instance import (
 )
 
 from .utils import (
-    partition,
+    eprint,
     give_terminal_to,
+    limit_lines,
+    partition,
     str_args_to_dict,
 )
 
@@ -289,5 +291,8 @@ examples:
     except KeyboardInterrupt:
         pass
     except Error as e:
-        print(Style.red(str(e)), file=sys.stderr)
-        exit(1)
+        eprint(Style.red(str(e)))
+        if e.stderr:
+            eprint('LOG:\n\n<... skipped lines ...>')
+            eprint(limit_lines(e.stderr, 8))
+        sys.exit(1)
