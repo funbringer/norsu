@@ -274,7 +274,7 @@ examples:
     p_run.set_defaults(func=cmd_run)
 
     p_path = subparsers.add_parser('path', description='show paths to the specified builds')
-    p_path.add_argument('target', nargs='*', choices=known_targets())
+    p_path.add_argument('target', nargs='*')
     p_path.set_defaults(func=cmd_path)
 
     try:
