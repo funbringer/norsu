@@ -386,7 +386,7 @@ class Instance:
 
 
 @contextmanager
-def run_temp(instance, cwd=None, config_files=None, **kwargs):
+def run_temp(instance, config_files=None, **kwargs):
     pg_config = instance.get_bin_path('pg_config')
     temp_conf = ''
 

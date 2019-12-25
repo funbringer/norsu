@@ -116,6 +116,9 @@ def cmd_run(main_args, psql_args):
     dbname = main_args.dbname
     port = main_args.port
 
+    dump_file = main_args.dump
+    restore_file = main_args.restore
+
     work_dir = os.getcwd()
     pg_config = instance.get_bin_path('pg_config')
 
@@ -134,6 +137,10 @@ def cmd_run(main_args, psql_args):
         config_files.extend(main_args.config)
 
     with run_temp(instance, config_files=config_files, port=port) as node:
+        if restore_file:
+            node.restore(restore_file, dbname=dbname)
+            print('Restored from', Style.bold(restore_file))
+
         if main_args.psql:
             args = [
                 instance.get_bin_path('psql'),
@@ -143,6 +150,10 @@ def cmd_run(main_args, psql_args):
             p = subprocess.Popen(args, preexec_fn=os.setpgrp)
             give_terminal_to(p.pid)  # give PTS control to psql
             p.wait()                 # wait for psql to finish
+
+            if dump_file:
+                filename = node.dump(filename=dump_file, dbname=dbname)
+                print('Dump has been saved to', Style.bold(filename))
 
             sys.exit(p.returncode)
         else:
@@ -273,6 +284,8 @@ examples:
     p_run.add_argument('--pgxs', action='store_true', help='grab PGXS config as well')
     p_run.add_argument('--dbname', default='postgres', help='database name for PSQL')
     p_run.add_argument('--port', type=int, help='port to be used for this instance')
+    p_run.add_argument('--dump', metavar='FILENAME', type=str, help='save dump to file before shutdown')
+    p_run.add_argument('--restore', metavar='FILENAME', type=str, help='restore from dump file')
     p_run.set_defaults(func=cmd_run)
 
     p_path = subparsers.add_parser('path', description='show paths to the specified builds')
