@@ -186,9 +186,11 @@ scan-build norsu pgxs 9.5 10 -- clean all
 Known `cmd_options`:
 
 * `--pgxs` -- use PG config files provided by extension, as in the `pgxs` command
-* `--psql` -- run `psql` connected to a defaut DB after PostgreSQL has started
+* `--psql` -- run `psql` connected to a default DB after PostgreSQL has started
 * `--port` -- bind to a port provided by user (random by default)
 * `--config` -- pass a set of custom config files to a PG cluster
+* `--dump` -- save db dump to file before node shutdown
+* `--restore` -- restore from dump file before run psql
 
 Create and run a temporary instance (DB) of PostgreSQL using build named `target`.
 The instance will be up & running until the command is interrupted (e.g. with `SIGINT`).
