@@ -30,21 +30,21 @@ from .utils import (
 )
 
 
-def known_targets(dir=NORSU_DIR):
+def known_targets(directory=NORSU_DIR):
     return {
-        e for e in os.listdir(dir)
+        e for e in os.listdir(directory)
         if not e.startswith('.')
     }
 
 
-def preprocess_targets(raw_targets, dir=NORSU_DIR):
+def preprocess_targets(raw_targets, directory=NORSU_DIR):
     entries_pos, entries_neg = partition(lambda x: x.startswith('^'), raw_targets)
 
     entries_neg = set((e[1:] for e in entries_neg))  # remove '^'
     entries_pos = set(entries_pos)
 
     if not entries_pos or entries_neg:
-        entries_pos = known_targets(dir=dir)
+        entries_pos = known_targets(directory=directory)
 
     entries = []
     for e in sorted(entries_pos - entries_neg):
@@ -60,7 +60,7 @@ def split_make_args(args):
     entries = list(entries)
     options = list(options)
 
-    return (entries, options)
+    return entries, options
 
 
 def split_args_extra(args):
@@ -70,9 +70,9 @@ def split_args_extra(args):
 
     try:
         i = args.index('--')
-        return (args[:i], args[i + 1:])
+        return args[:i], args[i + 1:]
     except ValueError:
-        return (args, [])
+        return args, []
 
 
 def cmd_install(args, _):
