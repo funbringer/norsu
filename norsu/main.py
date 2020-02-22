@@ -116,8 +116,8 @@ def cmd_run(main_args, psql_args):
     dbname = main_args.dbname
     port = main_args.port
 
-    dump_file = main_args.dump_to
-    restore_file = main_args.restore_from
+    dump_file = main_args.dump
+    restore_file = main_args.restore
 
     work_dir = os.getcwd()
     pg_config = instance.get_bin_path('pg_config')
