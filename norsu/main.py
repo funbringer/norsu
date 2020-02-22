@@ -4,7 +4,6 @@ import sys
 import subprocess
 
 from shutil import rmtree
-from time import sleep
 
 from . import __version__
 from .argparse_actions import ShlexSplitAction
@@ -142,24 +141,33 @@ def cmd_run(main_args, psql_args):
             print('Restored from', Style.bold(restore_file))
 
         if main_args.psql:
-            args = [
+            cmd = [
                 instance.get_bin_path('psql'),
                 '-p', str(node.port),
                 '-d', dbname,
-            ] + psql_args
-            p = subprocess.Popen(args, preexec_fn=os.setpgrp)
-            give_terminal_to(p.pid)  # give PTS control to psql
-            p.wait()                 # wait for psql to finish
+                *psql_args
+            ]
 
-            if dump_file:
-                filename = node.dump(filename=dump_file, dbname=dbname)
-                print('Dump has been saved to', Style.bold(filename))
-
-            sys.exit(p.returncode)
         else:
             print('Press Ctrl+C to exit', file=sys.stderr)
-            while True:
-                sleep(1)
+            cmd = [
+                'sleep',
+                'infinity'
+            ]
+
+        # XXX: to avoid undesirable PG shutdown (signal),
+        # run cmd within its own process group
+        p = subprocess.Popen(cmd, preexec_fn=os.setpgrp)
+
+        # give PTS control to cmd and wait for it to finish
+        give_terminal_to(p.pid)
+        p.wait()
+
+        if dump_file:
+            filename = node.dump(filename=dump_file, dbname=dbname)
+            print('Dump has been saved to', Style.bold(filename))
+
+        sys.exit(p.returncode)
 
 
 def cmd_search(args, _):
