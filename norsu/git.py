@@ -53,8 +53,8 @@ class SortRefByVersion:
 @total_ordering
 class SortRefBySimilarity:
     @staticmethod
-    def ngram(text, N=3):
-        ngrams = (text[i:i + N] for i in range(0, len(text) - N + 1))
+    def ngram(text, n=3):
+        ngrams = (text[i:i + n] for i in range(0, len(text) - n + 1))
         return set(ngrams)
 
     @staticmethod
