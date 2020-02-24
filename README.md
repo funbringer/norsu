@@ -43,7 +43,7 @@ and you're good to go!
 
 To install a dev version, clone this repo and run:
 
-```
+```bash
 pip install --user -U .
 ```
 
@@ -87,7 +87,7 @@ select the most relevant one, configure and install it to `$NORSU_PATH/target`.
 
 Example:
 
-```
+```bash
 # install some releases
 $ norsu install 9.5 9.6 10
 
@@ -109,7 +109,7 @@ Branches are sorted by decreasing priority:
 
 Example:
 
-```
+```bash
 $ norsu search 10
 
 Search query: 10
@@ -132,7 +132,7 @@ This command prints the amount of new commits available and updates info shown b
 
 Print some info about each `target`, for instance:
 
-```
+```bash
 $ norsu status master
 
 Selected instance: master
@@ -189,15 +189,15 @@ Known `cmd_options`:
 * `--psql` -- run `psql` connected to a default DB after PostgreSQL has started
 * `--port` -- bind to a port provided by user (random by default)
 * `--config` -- pass a set of custom config files to a PG cluster
-* `--dump` -- save db dump to file before node shutdown
-* `--restore` -- restore from dump file before run psql
+* `--restore` -- restore DB from a file before node startup
+* `--dump` -- save DB dump to a file before node shutdown
 
 Create and run a temporary instance (DB) of PostgreSQL using build named `target`.
 The instance will be up & running until the command is interrupted (e.g. with `SIGINT`).
 
-Example:
+Examples:
 
-```
+```bash
 $ norsu run 10 --psql
 
 Starting temporary PostgreSQL instance...
@@ -206,6 +206,35 @@ psql (10.4)
 Type "help" for help.
 
 postgres=#
+```
+
+```bash
+$ norsu run master --psql --{dump,restore}=/tmp/dump.sql
+Starting temporary PostgreSQL instance...
+
+dir: /tmp/tgsn_f7c_3dh4
+port: 10451
+
+Restored from /tmp/dump.sql
+
+psql (13devel)
+Type "help" for help.
+
+postgres[port=10451]=# create table test (val int);
+CREATE TABLE
+postgres[port=10451]=# \q
+
+Dump has been saved to /tmp/dump.sql
+
+$ cat /tmp/dump.sql
+# ... skipped
+--
+-- Name: test; Type: TABLE; Schema: public; Owner: dmitry
+--
+
+CREATE TABLE public.test (
+    val integer
+);
 ```
 
 #### `norsu path [target]...`
