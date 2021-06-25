@@ -8,11 +8,11 @@ def merge_config(current, new):
     if isinstance(current, dict):
         for k, v in new.items():
             if k not in current:
-                raise Error('Unknown option: {}'.format(k))
+                raise Exception(f'Unknown option: {k}')
 
             if not merge_config(current[k], new[k]):
                 if type(current[k]) != type(v):
-                    raise Error('Wrong option type: {}'.format(k))
+                    raise Exception(f'Bad option type: {k}')
                 current[k] = v
 
         return True

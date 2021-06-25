@@ -124,7 +124,7 @@ class GitRepo:
         args = [
             'git',
             'rev-list',
-            '{}..{}'.format(commit1, commit2),
+            f'{commit1}..{commit2}',
             '--count',
         ]
 

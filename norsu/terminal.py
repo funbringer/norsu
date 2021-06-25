@@ -7,7 +7,7 @@ class Style:
     @staticmethod
     def style(color, text):
         if os.isatty(1) and os.isatty(2) and CONFIG['misc']['colors']:
-            return '\033[{}m{}\033[0m'.format(color, text)
+            return f'\033[{color}m{text}\033[0m'
         return text
 
     @staticmethod

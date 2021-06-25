@@ -28,18 +28,18 @@ class Extension:
         # append compiler options, if needed (e.g. for scan_build)
         for env in ['CC', 'CXX']:
             if env in os.environ:
-                opts.append('{}={}'.format(env, os.environ.get(env)))
+                opts.append(f'{env}={os.environ.get(env)}')
 
         for target in targets:
             # print simplified command
             quoted_opts = ' '.join([shlex.quote(x) for x in opts])
-            s = '$ make {} {}'.format(quoted_opts, target)
+            s = f'$ make {quoted_opts} {target}'
             print(Style.green(s))
 
             args = [
                 TOOL_MAKE,
                 'USE_PGXS=1',
-                'PG_CONFIG={}'.format(self.pg_config),
+                f'PG_CONFIG={self.pg_config}',
             ]
 
             args.extend(opts)
@@ -59,14 +59,14 @@ class Extension:
         args = [
             TOOL_MAKE,
             'USE_PGXS=1',
-            'PG_CONFIG={}'.format(self.pg_config),
+            f'PG_CONFIG={self.pg_config}',
             '-f', makefile,
             '-f', print_mk,
-            'print-{}'.format(name)
+            f'print-{name}',
         ]
 
         try:
             # return var's value
             return execute(args).partition('=')[2]
         except Error:
-            raise Error('Failed to get variable {} from Makefile'.format(name))
+            raise Exception(f'Failed to get variable {name} from Makefile')

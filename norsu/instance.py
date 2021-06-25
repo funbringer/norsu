@@ -24,7 +24,6 @@ from .utils import (
     eprint,
     execute,
     path_exists,
-    try_read_file,
 )
 
 
@@ -33,7 +32,7 @@ def step(*args):
 
 
 def line(name, value=None):
-    print('\t', name, '\t{}'.format(value))
+    print('\t', name, f'\t{value}')
 
 
 def read_commit_file(path):
@@ -75,7 +74,7 @@ class InstanceName:
         pred2 = any(c.isalnum() for c in s)
 
         if not (pred1 and pred2):
-            raise Error('Wrong identifier: {}'.format(s))
+            raise Exception('Bad identifier: {s}')
 
         return s
 
@@ -96,10 +95,12 @@ class InstanceName:
             # replace version separators with a pattern
             pattern = self.rx_sep.sub(lambda m: '[._]', pattern)
 
-            for fmt in ['REL_{}*', 'REL{}*']:
-                result.append(fmt.format(pattern))
+            result.extend([
+                f'REL_{pattern}*',
+                f'REL{pattern}*',
+            ])
         else:
-            result.append('*{}*'.format(pattern))
+            result.append(f'*{pattern}*')
 
         return result
 
@@ -246,7 +247,7 @@ class Instance:
         for path, name in [(self.main_dir, 'main'), (self.work_dir, 'work')]:
             if os.path.exists(path):
                 rmtree(path=path, ignore_errors=True)
-                step('Removed {} dir'.format(name))
+                step(f'Removed directory {name}')
 
     def _configure_options(self):
         pg_config_out = self.pg_config(['--configure'])
@@ -270,7 +271,7 @@ class Instance:
             refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
 
             if not refs:
-                raise Error('No branch found for {}'.format(self.name))
+                raise Exception(f'No branch found for {self.name}')
 
             # select the most relevant branch
             ref = sort_refs(refs, self.name)[0]
@@ -297,10 +298,10 @@ class Instance:
                 installed_commit = self.installed_commit_hash
                 if installed_commit:
                     commits = self.git.distance(installed_commit, branch)
-                    fresh_commits = ' ({} commits)'.format(commits)
+                    fresh_commits = f'({commits} commits)'
 
                 step('Current branch:', Style.bold(branch))
-                step('Installed build is out of date{}'.format(fresh_commits))
+                step('Installed build is out of date', fresh_commits)
 
         # add .norsu* to git excludes
         self.git.add_excludes('.norsu*')
@@ -310,7 +311,7 @@ class Instance:
         if not os.path.exists(makefile):
             args = [
                 './configure',
-                '--prefix={}'.format(self.main_dir)
+                f'--prefix={self.main_dir}'
             ]
 
             # NOTE: [] is a valid choice
@@ -347,7 +348,7 @@ class Instance:
             self.built_commit_hash = self.actual_commit_hash
 
             jobs = int(CONFIG['build']['jobs'])
-            for arg in ['-j{}'.format(jobs), 'install']:
+            for arg in [f'-j{jobs}', 'install']:
                 args = [TOOL_MAKE, arg]
                 execute(args, cwd=self.work_dir)
 
@@ -378,11 +379,11 @@ class Instance:
                 execute(args, cwd=path, output=ExecOutput.Devnull)
                 step('Installed contrib', Style.bold(extension))
             except Exception:
-                step(Style.red('Failed to install {}'.format(extension)))
+                step(Style.red(f'Failed to install {extension}'))
                 failed = True
 
         if failed:
-            raise Error('Failed to install some extensions')
+            raise Exception('Failed to install some extensions')
 
 
 @contextmanager
@@ -391,7 +392,7 @@ def run_temp(instance, config_files=None, **kwargs):
     temp_conf = ''
 
     if not os.path.exists(pg_config):
-        raise Error('Failed to find pg_config at {}'.format(pg_config))
+        raise Exception(f'Failed to find pg_config at {pg_config}')
 
     # HACK: help testgres find our instance
     os.environ['PG_CONFIG'] = pg_config
@@ -403,8 +404,9 @@ def run_temp(instance, config_files=None, **kwargs):
         configs = []
 
         for path in (f for f in config_files if f is not None):
-            eprint('Found custom config:', os.path.basename(path))
-            configs.append(try_read_file(path))
+            eprint('Custom config file:', os.path.basename(path))
+            with open(path) as f:
+                configs.append(f.read())
 
         temp_conf = '\n'.join(configs)
 

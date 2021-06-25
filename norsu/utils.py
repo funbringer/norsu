@@ -42,14 +42,6 @@ def partition(pred, iterable):
     return filterfalse(pred, t1), filter(pred, t2)
 
 
-def try_read_file(path):
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            return f.read()
-
-    return ''
-
-
 def str_args_to_dict(a):
     result = {}
     for arg in shlex.split(a):

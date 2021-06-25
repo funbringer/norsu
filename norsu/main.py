@@ -173,7 +173,7 @@ def cmd_run(main_args, psql_args):
 def cmd_search(args, _):
     for target in preprocess_targets(args.target):
         print('Search query:', Style.bold(target.query),
-              '({})'.format(target.type.name))
+              f'({target.type.name})')
 
         patterns = target.to_patterns()
         refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
@@ -203,7 +203,7 @@ def cmd_pgxs(main_args, make_args):
         if os.path.exists(pg_config):
             print('Executing against instance', Style.bold(pg), '\n')
         else:
-            print(Style.yellow('Cannot find instance {}\n'.format(pg)))
+            print(Style.yellow(f'Cannot find instance {pg}\n'))
             continue
 
         # should we start PostgreSQL?
@@ -217,7 +217,7 @@ def cmd_pgxs(main_args, make_args):
             # run commands under a running PostgreSQL instance
             with run_temp(instance, config_files=config_files, port=port) as node:
                 # make pg_regress aware of non-default port
-                make_opts.append('{}+=--port={}'.format(mk_var, node.port))
+                make_opts.append(f'{mk_var}+=--port={node.port}')
                 extension.make(targets=make_targets, options=make_opts)
         else:
             extension.make(targets=make_targets, options=make_opts)
@@ -234,17 +234,18 @@ def main():
     # split args using '--'
     args, extra = split_args_extra(sys.argv)
 
-    examples = """
+    app = args[0]
+    examples = f"""
 examples:
-    {0} install  9.6.5  10  master
-    {0} pgxs     9.6   9.5  --  install -j4
-    {0} pull     REL_10_STABLE
-    {0} remove   9.5
-    {0} status
-    """.format(os.path.basename(args[0]))
+    {app} install  9.6.5  10  master
+    {app} pgxs     9.6   9.5  --  install -j4
+    {app} pull     REL_10_STABLE
+    {app} remove   9.5
+    {app} status
+    """
 
     parser = argparse.ArgumentParser(
-        description='PostgreSQL builds manager v{}'.format(__version__),
+        description=f'PostgreSQL builds manager v{__version__}',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=examples)
 
@@ -316,4 +317,7 @@ examples:
         if e.stderr:
             eprint('LOG:\n\n<... skipped lines ...>')
             eprint(limit_lines(e.stderr, 8))
+        sys.exit(1)
+    except Exception as e:
+        eprint(Style.red(str(e)))
         sys.exit(1)
