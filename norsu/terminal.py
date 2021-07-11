@@ -1,6 +1,7 @@
 import os
+import signal
 
-from .config import CONFIG
+from norsu.config import CONFIG
 
 
 class Style:
@@ -29,3 +30,23 @@ class Style:
     @staticmethod
     def yellow(text):
         return Style.style(33, text)
+
+
+def give_terminal_to(pgid):
+    signals = {
+        signal.SIGTTOU,
+        signal.SIGTTIN,
+        signal.SIGTSTP,
+        signal.SIGCHLD,
+    }
+
+    old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, signals)
+    try:
+        os.tcsetpgrp(2, pgid)
+        return True
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return False
+    finally:
+        signal.pthread_sigmask(signal.SIG_SETMASK, old_mask)

@@ -1,18 +1,16 @@
 import os
 import toml
 
-from .exceptions import Error
-
 
 def merge_config(current, new):
     if isinstance(current, dict):
         for k, v in new.items():
             if k not in current:
-                raise Exception(f'Unknown option: {k}')
+                raise Exception(f'Config: unknown option: {k}')
 
             if not merge_config(current[k], new[k]):
                 if type(current[k]) != type(v):
-                    raise Exception(f'Bad option type: {k}')
+                    raise Exception(f'Config: bad option type: {k}')
                 current[k] = v
 
         return True
@@ -28,7 +26,6 @@ WORK_DIR = os.path.join(NORSU_DIR, '.norsu')
 if not os.path.exists(WORK_DIR):
     os.makedirs(WORK_DIR)
 
-
 CONFIG = {
     'repos': {
         'urls': [
@@ -36,11 +33,7 @@ CONFIG = {
         ],
         'first_match': True,
     },
-    'commands': {
-        'remove': {
-            'require_args': True,
-        }
-    },
+    'commands': {},
     'build': {
         'configure_options': ['CFLAGS=-g3', '--enable-cassert'],
         'jobs': 1,
@@ -64,10 +57,6 @@ if not os.path.exists(cfg):
         f.write(toml.dumps(CONFIG))
 else:
     with open(cfg, 'r') as f:
-        try:
-            merge_config(CONFIG, toml.loads(f.read()))
-        except Error as e:
-            print(str(e))
-            exit(1)
+        merge_config(CONFIG, toml.loads(f.read()))
 
 TOOL_MAKE = CONFIG['tools']['make']

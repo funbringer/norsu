@@ -2,8 +2,8 @@ import os
 
 from functools import total_ordering
 
-from .config import CONFIG
-from .utils import execute, ExecOutput
+from norsu.config import CONFIG
+from norsu.execute import ExecOutput, execute
 
 
 @total_ordering
@@ -109,8 +109,10 @@ class GitRepo:
         args = [
             'git',
             'clone',
-            '--branch', branch,
-            '--depth', str(depth),
+            '--branch',
+            branch,
+            '--depth',
+            str(depth),
             url or self.url,
             self.work_dir,
         ]

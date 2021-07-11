@@ -3,19 +3,22 @@ import shlex
 
 from pkg_resources import resource_filename
 
-from .config import CONFIG, TOOL_MAKE
-from .exceptions import Error
-from .terminal import Style
-from .utils import execute, ExecOutput
+from norsu.config import CONFIG, TOOL_MAKE
+from norsu.exceptions import LogicError, ProcessError
+from norsu.execute import ExecOutput, execute
+from norsu.terminal import Style
 
 
 class Extension:
-    def __init__(self, work_dir, pg_config):
+    def __init__(self, work_dir, pg_config=None):
         self.work_dir = work_dir
         self.pg_config = pg_config
 
-    def make(self, targets=None, options=None):
+    def __pgxs_args(self):
+        if self.pg_config:
+            return ['USE_PGXS=1', f'PG_CONFIG={self.pg_config}']
 
+    def make(self, *targets, options=None):
         if not targets:
             targets = CONFIG['pgxs']['default_targets']
 
@@ -38,12 +41,10 @@ class Extension:
 
             args = [
                 TOOL_MAKE,
-                'USE_PGXS=1',
-                f'PG_CONFIG={self.pg_config}',
+                *self.__pgxs_args(),
+                *opts,
+                target,
             ]
-
-            args.extend(opts)
-            args.append(target)
 
             # execute make (writes to stdout)
             execute(args,
@@ -58,15 +59,17 @@ class Extension:
 
         args = [
             TOOL_MAKE,
-            'USE_PGXS=1',
-            f'PG_CONFIG={self.pg_config}',
-            '-f', makefile,
-            '-f', print_mk,
+            *self.__pgxs_args(),
+            '-f',
+            makefile,
+            '-f',
+            print_mk,
             f'print-{name}',
         ]
 
         try:
             # return var's value
             return execute(args).partition('=')[2]
-        except Error:
-            raise Exception(f'Failed to get variable {name} from Makefile')
+        except ProcessError as e:
+            raise LogicError(
+                f'Failed to get variable {name} from Makefile') from e

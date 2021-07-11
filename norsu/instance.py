@@ -7,22 +7,23 @@ from contextlib import contextmanager, redirect_stdout
 from enum import Enum
 from shutil import rmtree
 from testgres import get_new_node, configure_testgres
+from distutils.spawn import find_executable
 
-from .config import NORSU_DIR, WORK_DIR, CONFIG, TOOL_MAKE
-from .exceptions import Error
-from .terminal import Style
+from norsu.config import NORSU_DIR, WORK_DIR, CONFIG, TOOL_MAKE
+from norsu.exceptions import LogicError, ProcessError
+from norsu.execute import ExecOutput, execute
+from norsu.extension import Extension
+from norsu.terminal import Style
 
-from .git import (
+from norsu.git import (
     GitRepo,
     SortRefBySimilarity,
     SortRefByVersion,
     find_relevant_refs,
 )
 
-from .utils import (
-    ExecOutput,
+from norsu.utils import (
     eprint,
-    execute,
     path_exists,
 )
 
@@ -74,7 +75,7 @@ class InstanceName:
         pred2 = any(c.isalnum() for c in s)
 
         if not (pred1 and pred2):
-            raise Exception('Bad identifier: {s}')
+            raise LogicError('Bad identifier: {s}')
 
         return s
 
@@ -123,7 +124,8 @@ class Instance:
         self.ignore_file = os.path.join(self.main_dir, '.norsu_ignore')
 
         # store commit hashes (build + install)
-        self.installed_commit_file = os.path.join(self.main_dir, '.norsu_build')
+        self.installed_commit_file = os.path.join(self.main_dir,
+                                                  '.norsu_build')
         self.built_commit_file = os.path.join(self.work_dir, '.norsu_build')
 
     @property
@@ -168,7 +170,10 @@ class Instance:
         return bc != ac or not bc or not ac
 
     def get_bin_path(self, name):
-        return os.path.join(self.main_dir, 'bin', name)
+        local = os.path.join(self.main_dir, 'bin', name)
+        if os.path.exists(local):
+            return local
+        return find_executable(name)
 
     def pg_config(self, params=None):
         pg_config = self.get_bin_path('pg_config')
@@ -203,14 +208,14 @@ class Instance:
         if commit:
             line('Commit:', commit)
 
-        pg_config_manual = os.path.join(self.main_dir,
-                                        'include', 'pg_config_manual.h')
+        pg_config_manual = os.path.join(self.main_dir, 'include',
+                                        'pg_config_manual.h')
         if os.path.exists(pg_config_manual):
             with open(pg_config_manual, 'r') as f:
-                for l in f:
-                    if l.startswith('#define MEMORY_CONTEXT_CHECKING'):
+                for ln in f:
+                    if ln.startswith('#define MEMORY_CONTEXT_CHECKING'):
                         break  # too late
-                    if l.startswith('#define USE_VALGRIND'):
+                    if ln.startswith('#define USE_VALGRIND'):
                         line('Valgrind:', 'Enabled')
                         break  # OK
 
@@ -227,7 +232,8 @@ class Instance:
         if self.ignore:
             step(Style.yellow('Ignored due to .norsu_ignore'))
 
-        elif os.path.exists(self.main_dir) and not os.path.exists(self.work_dir):
+        elif os.path.exists(
+                self.main_dir) and not os.path.exists(self.work_dir):
             step(Style.yellow('This is a standalone build, skipping'))
 
         else:
@@ -237,11 +243,11 @@ class Instance:
                 self._maybe_configure_project(configure)
                 self._maybe_make_install(configure)
                 self._maybe_make_extensions(extensions)
-            except Error as e:
+            except ProcessError as e:
                 step(Style.red(str(e)))
 
                 # We'd like to print log and exit with error code
-                raise Error(stderr=e.stderr)
+                raise ProcessError(stderr=e.stderr)
 
     def remove(self):
         for path, name in [(self.main_dir, 'main'), (self.work_dir, 'work')]:
@@ -271,7 +277,7 @@ class Instance:
             refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
 
             if not refs:
-                raise Exception(f'No branch found for {self.name}')
+                raise LogicError(f'No branch found for {self.name}')
 
             # select the most relevant branch
             ref = sort_refs(refs, self.name)[0]
@@ -309,10 +315,7 @@ class Instance:
     def _maybe_configure_project(self, configure):
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
         if not os.path.exists(makefile):
-            args = [
-                './configure',
-                f'--prefix={self.main_dir}'
-            ]
+            args = ['./configure', f'--prefix={self.main_dir}']
 
             # NOTE: [] is a valid choice
             if configure is None:
@@ -335,7 +338,9 @@ class Instance:
             self.built_commit_hash = None
 
             args = [TOOL_MAKE, 'distclean']
-            execute(args, cwd=self.work_dir, error=False,
+            execute(args,
+                    cwd=self.work_dir,
+                    error=False,
                     output=ExecOutput.Devnull)
 
             step('Prepared work dir for a new build')
@@ -364,10 +369,8 @@ class Instance:
         # provide defaults
         if not extensions:
             path = os.path.join(self.work_dir, 'contrib')
-            extensions = sorted((
-                e for e in os.listdir(path)
-                if os.path.isdir(os.path.join(path, e))
-            ))
+            extensions = sorted((e for e in os.listdir(path)
+                                 if os.path.isdir(os.path.join(path, e))))
 
         failed = False
 
@@ -375,15 +378,14 @@ class Instance:
             # is it a contrib?
             path = os.path.join(self.work_dir, 'contrib', extension)
             try:
-                args = [TOOL_MAKE, 'install']
-                execute(args, cwd=path, output=ExecOutput.Devnull)
+                Extension(path).make('install')
                 step('Installed contrib', Style.bold(extension))
-            except Exception:
+            except ProcessError:
                 step(Style.red(f'Failed to install {extension}'))
                 failed = True
 
         if failed:
-            raise Exception('Failed to install some extensions')
+            raise LogicError('Failed to install some extensions')
 
 
 @contextmanager
@@ -392,7 +394,7 @@ def run_temp(instance, config_files=None, **kwargs):
     temp_conf = ''
 
     if not os.path.exists(pg_config):
-        raise Exception(f'Failed to find pg_config at {pg_config}')
+        raise LogicError(f'Failed to find pg_config at {pg_config}')
 
     # HACK: help testgres find our instance
     os.environ['PG_CONFIG'] = pg_config
