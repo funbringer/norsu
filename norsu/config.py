@@ -29,14 +29,14 @@ if not os.path.exists(WORK_DIR):
 CONFIG = {
     'repos': {
         'urls': [
-            'git://git.postgresql.org/git/postgresql.git',
+            'https://git.postgresql.org/git/postgresql.git',
         ],
         'first_match': True,
     },
     'commands': {},
     'build': {
         'configure_options': ['CFLAGS=-g3', '--enable-cassert'],
-        'jobs': 1,
+        'jobs': 0,
     },
     'pgxs': {
         'default_targets': ['clean', 'install'],

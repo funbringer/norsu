@@ -2,12 +2,12 @@ import os
 import re
 import shlex
 import sys
+import multiprocessing
 
 from contextlib import contextmanager, redirect_stdout
 from enum import Enum
 from shutil import rmtree
 from testgres import get_new_node, configure_testgres
-from distutils.spawn import find_executable
 
 from norsu.config import NORSU_DIR, WORK_DIR, CONFIG, TOOL_MAKE
 from norsu.exceptions import LogicError, ProcessError
@@ -170,10 +170,7 @@ class Instance:
         return bc != ac or not bc or not ac
 
     def get_bin_path(self, name):
-        local = os.path.join(self.main_dir, 'bin', name)
-        if os.path.exists(local):
-            return local
-        return find_executable(name)
+        return os.path.join(self.main_dir, 'bin', name)
 
     def pg_config(self, params=None):
         pg_config = self.get_bin_path('pg_config')
@@ -353,6 +350,9 @@ class Instance:
             self.built_commit_hash = self.actual_commit_hash
 
             jobs = int(CONFIG['build']['jobs'])
+            if jobs == 0:
+                 jobs = multiprocessing.cpu_count()
+
             for arg in [f'-j{jobs}', 'install']:
                 args = [TOOL_MAKE, arg]
                 execute(args, cwd=self.work_dir)
@@ -373,7 +373,6 @@ class Instance:
                                  if os.path.isdir(os.path.join(path, e))))
 
         failed = False
-
         for extension in extensions:
             # is it a contrib?
             path = os.path.join(self.work_dir, 'contrib', extension)

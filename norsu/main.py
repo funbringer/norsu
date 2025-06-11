@@ -64,6 +64,9 @@ examples:
     p_remove = subparsers.add_parser('remove',
                                      description='remove specified builds')
     p_remove.add_argument('target', nargs='*')
+    p_remove.add_argument('--force',
+                          action='store_true',
+                          help='force remove, even if no target')
     p_remove.set_defaults(func=commands.cmd_instance)
 
     # norsu status

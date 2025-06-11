@@ -2,8 +2,10 @@ import os
 import subprocess
 import sys
 
+from distutils.spawn import find_executable
 from shutil import rmtree
 
+from norsu.exceptions import LogicError
 from norsu.extension import Extension
 from norsu.git import find_relevant_refs
 
@@ -76,6 +78,10 @@ def cmd_install(args, _):
 def cmd_instance(args, _):
     cmd = args.command
 
+    # Protect the user from an accidental removal of all instances
+    if cmd == 'remove' and not (args.target or args.force):
+        raise LogicError('Pass --force to remove all instances')
+
     for target in preprocess_targets(args.target):
         print('Selected instance:', Style.bold(target))
 
@@ -125,8 +131,13 @@ def cmd_run(main_args, cli_args):
 
         cli = (main_args.psql and 'psql') or main_args.interactive
         if cli:
+            # Either it's a binary present in this instance
+            # or it should be in PATH
+            exe = instance.get_bin_path(cli)
+            if not os.path.exists(exe):
+                exe = find_executable(cli)
             cmd = [
-                instance.get_bin_path(cli),
+                exe,
                 f'postgres://localhost:{node.port}/{dbname}',
                 *cli_args,
             ]

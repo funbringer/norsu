@@ -1,7 +1,6 @@
 import os
 import shlex
-
-from pkg_resources import resource_filename
+import importlib
 
 from norsu.config import CONFIG, TOOL_MAKE
 from norsu.exceptions import LogicError, ProcessError
@@ -17,6 +16,7 @@ class Extension:
     def __pgxs_args(self):
         if self.pg_config:
             return ['USE_PGXS=1', f'PG_CONFIG={self.pg_config}']
+        return []
 
     def make(self, *targets, options=None):
         if not targets:
@@ -55,7 +55,7 @@ class Extension:
 
     def makefile_var(self, name):
         makefile = os.path.join(self.work_dir, 'Makefile')
-        print_mk = resource_filename('norsu', 'data/print.mk')
+        print_mk = importlib.resources.path('norsu', 'data/print.mk')
 
         args = [
             TOOL_MAKE,
