@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cace7b1a7a36813ea71756aacd757df5fae6b5e1202a8e53be2651c220f48a17"
+            "sha256": "05b1f2056adabf72540175a5153e59fe52d1d32041e74c2352dc9b135b6f0f61"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -18,18 +18,19 @@
     "default": {
         "asn1crypto": {
             "hashes": [
-                "sha256:4bcdf33c861c7d40bdcd74d8e4dd7661aac320fcdf40b9a3f95b4ee12fde2fa8",
-                "sha256:f4f6e119474e58e04a2b1af817eb585b4fd72bdd89b998624712b5c99be7641c"
+                "sha256:13ae38502be632115abf8a24cbe5f4da52e3b5231990aff31123c805306ccb9c",
+                "sha256:db4e40728b728508912cbb3d44f19ce188f218e9eba635821bb4b68564f8fd67"
             ],
-            "version": "==1.4.0"
+            "version": "==1.5.1"
         },
         "pg8000": {
             "hashes": [
-                "sha256:490ec22a92601f0454b3ed4c8d4ecddc30f66c0e3f783f0ecc581037749a8c55",
-                "sha256:f984e8e309876202b3fa4b170467eb716574ebd571330d9d65eb13446876cf04"
+                "sha256:0af2c1926b153307639868d2ee5cef6cd3a7d07448e12736989b10e1d491e201",
+                "sha256:46ebb03be52b7a77c03c725c79da2ca281d6e8f59577ca66b17c9009618cae78"
             ],
-            "markers": "python_version >= '3.6'",
-            "version": "==1.20.0"
+            "index": "pypi",
+            "markers": "python_version >= '3.9'",
+            "version": "==1.31.5"
         },
         "port-for": {
             "hashes": [
@@ -73,21 +74,29 @@
             "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==5.8.0"
         },
+        "python-dateutil": {
+            "hashes": [
+                "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3",
+                "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"
+            ],
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'",
+            "version": "==2.9.0.post0"
+        },
         "scramp": {
             "hashes": [
-                "sha256:27349d6839038fe3b56c641ea2a8703df065c1d605fdee67275857c0a82122b4",
-                "sha256:d27d768408c6fc025a0e567eed84325b0aaf24364c81ea5974e8334ae3c4fda3"
+                "sha256:a0cf9d2b4624b69bac5432dd69fecfc55a542384fe73c3a23ed9b138cda484e1",
+                "sha256:fe055ebbebf4397b9cb323fcc4b299f219cd1b03fd673ca40c97db04ac7d107e"
             ],
-            "markers": "python_version >= '3.6'",
-            "version": "==1.4.0"
+            "markers": "python_version >= '3.8'",
+            "version": "==1.4.6"
         },
         "six": {
             "hashes": [
-                "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
-                "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"
+                "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274",
+                "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-            "version": "==1.16.0"
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'",
+            "version": "==1.17.0"
         },
         "testgres": {
             "hashes": [
