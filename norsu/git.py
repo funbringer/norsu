@@ -1,5 +1,4 @@
 import os
-
 from functools import total_ordering
 
 from norsu.config import CONFIG
@@ -13,7 +12,7 @@ class SortRefByVersion:
         name = ref.name.lower()
 
         # extract version numbers
-        ver = ''.join((c for c in name if c.isdigit() or c == '_'))
+        ver = ''.join(c for c in name if c.isdigit() or c == '_')
         ver = (n for n in ver.split('_') if n)
         ver = list(map(lambda n: int(n), ver))
 
@@ -54,7 +53,7 @@ class SortRefByVersion:
 class SortRefBySimilarity:
     @staticmethod
     def ngram(text, n=3):
-        ngrams = (text[i:i + n] for i in range(0, len(text) - n + 1))
+        ngrams = (text[i : i + n] for i in range(0, len(text) - n + 1))
         return set(ngrams)
 
     @staticmethod
@@ -155,10 +154,7 @@ def find_relevant_refs(repos, patterns):
         out = execute(args)
 
         # list of matching branches and tags
-        refs += [
-            GitRef(repo, os.path.basename(r.split()[-1]))
-            for r in out.splitlines()
-        ]
+        refs += [GitRef(repo, os.path.basename(r.split()[-1])) for r in out.splitlines()]
 
         # should we stop after 1st match?
         if refs and CONFIG['repos']['first_match']:

@@ -15,15 +15,25 @@ OK
 # check default config
 cat "$NORSU_PATH/.norsu.toml"
 [repos]
-urls = [ "git://git.postgresql.org/git/postgresql.git",]
+urls = [
+    "https://git.postgresql.org/git/postgresql.git",
+]
 first_match = true
 
+[commands]
+
 [build]
-configure_options = [ "CFLAGS=-g3", "--enable-cassert",]
-jobs = 1
+configure_options = [
+    "CFLAGS=-g3",
+    "--enable-cassert",
+]
+jobs = 0
 
 [pgxs]
-default_targets = [ "clean", "install",]
+default_targets = [
+    "clean",
+    "install",
+]
 default_options = []
 
 [tools]
@@ -31,9 +41,6 @@ make = "make"
 
 [misc]
 colors = true
-
-[commands.remove]
-require_args = true
 
 # remove dir
 rm -rf "$NORSU_PATH"

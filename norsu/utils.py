@@ -1,9 +1,7 @@
 import os
 import shlex
 import sys
-
-from itertools import tee, filterfalse
-from typing import Dict, Optional
+from itertools import filterfalse, tee
 
 
 def partition(pred, iterable):
@@ -11,7 +9,7 @@ def partition(pred, iterable):
     return filterfalse(pred, t1), filter(pred, t2)
 
 
-def str_args_to_dict(a: str) -> Dict[str, str]:
+def str_args_to_dict(a: str) -> dict[str, str]:
     result = {}
     for arg in shlex.split(a):
         k, _, v = arg.partition('=')
@@ -19,9 +17,10 @@ def str_args_to_dict(a: str) -> Dict[str, str]:
     return result
 
 
-def path_exists(path: str) -> Optional[str]:
+def path_exists(path: str) -> str | None:
     if os.path.exists(path):
         return path
+    return None
 
 
 def eprint(*args, **kwargs) -> None:

@@ -1,5 +1,8 @@
 import os
-import toml
+import tomllib
+from typing import Any
+
+import tomli_w
 
 
 def merge_config(current, new):
@@ -9,7 +12,7 @@ def merge_config(current, new):
                 raise Exception(f'Config: unknown option: {k}')
 
             if not merge_config(current[k], new[k]):
-                if type(current[k]) != type(v):
+                if type(current[k]) is not type(v):
                     raise Exception(f'Config: bad option type: {k}')
                 current[k] = v
 
@@ -26,7 +29,7 @@ WORK_DIR = os.path.join(NORSU_DIR, '.norsu')
 if not os.path.exists(WORK_DIR):
     os.makedirs(WORK_DIR)
 
-CONFIG = {
+CONFIG: dict[str, Any] = {
     'repos': {
         'urls': [
             'https://git.postgresql.org/git/postgresql.git',
@@ -47,16 +50,16 @@ CONFIG = {
     },
     'misc': {
         'colors': True,
-    }
+    },
 }
 
 cfg = os.path.join(NORSU_DIR, '.norsu.toml')
 
 if not os.path.exists(cfg):
-    with open(cfg, 'w') as f:
-        f.write(toml.dumps(CONFIG))
+    with open(cfg, 'wb') as fw:
+        tomli_w.dump(CONFIG, fw)
 else:
-    with open(cfg, 'r') as f:
-        merge_config(CONFIG, toml.loads(f.read()))
+    with open(cfg, 'rb') as fr:
+        merge_config(CONFIG, tomllib.load(fr))
 
 TOOL_MAKE = CONFIG['tools']['make']

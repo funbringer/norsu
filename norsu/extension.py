@@ -1,6 +1,6 @@
 import os
 import shlex
-import importlib
+from importlib.resources import files
 
 from norsu.config import CONFIG, TOOL_MAKE
 from norsu.exceptions import LogicError, ProcessError
@@ -47,15 +47,12 @@ class Extension:
             ]
 
             # execute make (writes to stdout)
-            execute(args,
-                    cwd=self.work_dir,
-                    env=os.environ,
-                    output=ExecOutput.Stdout)
+            execute(args, cwd=self.work_dir, env=os.environ, output=ExecOutput.Stdout)
             print()
 
     def makefile_var(self, name):
         makefile = os.path.join(self.work_dir, 'Makefile')
-        print_mk = importlib.resources.path('norsu', 'data/print.mk')
+        print_mk = str(files('norsu') / 'data' / 'print.mk')
 
         args = [
             TOOL_MAKE,
@@ -71,5 +68,4 @@ class Extension:
             # return var's value
             return execute(args).partition('=')[2]
         except ProcessError as e:
-            raise LogicError(
-                f'Failed to get variable {name} from Makefile') from e
+            raise LogicError(f'Failed to get variable {name} from Makefile') from e

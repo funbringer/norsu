@@ -5,7 +5,7 @@ export NORSU_PATH="$PWD/pg"
 norsu pull master
 Selected instance: master
 	=> No work dir, choosing repo & branch
-	=> Selected repo git://git.postgresql.org/git/postgresql.git
+	=> Selected repo https://git.postgresql.org/git/postgresql.git
 	=> Selected branch master
 	=> Cloned git repo to work dir
 

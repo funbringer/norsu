@@ -1,32 +1,26 @@
 import os
 import subprocess
 import sys
+from shutil import rmtree, which
 
-from distutils.spawn import find_executable
-from shutil import rmtree
-
+from norsu.config import (
+    CONFIG,
+    NORSU_DIR,
+    WORK_DIR,
+)
 from norsu.exceptions import LogicError
 from norsu.extension import Extension
 from norsu.git import find_relevant_refs
-
-from norsu.config import (
-    NORSU_DIR,
-    WORK_DIR,
-    CONFIG,
-)
-
 from norsu.instance import (
     Instance,
     InstanceName,
-    sort_refs,
     run_temp,
+    sort_refs,
 )
-
 from norsu.terminal import (
     Style,
     give_terminal_to,
 )
-
 from norsu.utils import (
     partition,
     str_args_to_dict,
@@ -38,10 +32,9 @@ def known_targets(directory=NORSU_DIR):
 
 
 def preprocess_targets(raw_targets, directory=NORSU_DIR):
-    entries_pos, entries_neg = partition(lambda x: x.startswith('^'),
-                                         raw_targets)
+    entries_pos, entries_neg = partition(lambda x: x.startswith('^'), raw_targets)
 
-    entries_neg = set((e[1:] for e in entries_neg))  # remove '^'
+    entries_neg = set(e[1:] for e in entries_neg)  # remove '^'
     entries_pos = set(entries_pos)
 
     if not entries_pos or entries_neg:
@@ -68,9 +61,9 @@ def cmd_install(args, _):
     for target in preprocess_targets(args.target):
         print('Selected instance:', Style.bold(target))
 
-        Instance(target).install(configure=args.configure,
-                                 extensions=args.extensions,
-                                 update=not args.no_update)
+        Instance(target).install(
+            configure=args.configure, extensions=args.extensions, update=not args.no_update
+        )
 
         print()  # splitter
 
@@ -88,9 +81,9 @@ def cmd_instance(args, _):
         instance = Instance(target)
 
         cmds = {
-            'pull': lambda: instance.pull(),
-            'remove': lambda: instance.remove(),
-            'status': lambda: instance.status(),
+            'pull': instance.pull,
+            'remove': instance.remove,
+            'status': instance.status,
         }
 
         # execute command
@@ -135,7 +128,7 @@ def cmd_run(main_args, cli_args):
             # or it should be in PATH
             exe = instance.get_bin_path(cli)
             if not os.path.exists(exe):
-                exe = find_executable(cli)
+                exe = which(cli)
             cmd = [
                 exe,
                 f'postgres://localhost:{node.port}/{dbname}',
@@ -164,8 +157,7 @@ def cmd_run(main_args, cli_args):
 
 def cmd_search(args, _):
     for target in preprocess_targets(args.target):
-        print('Search query:', Style.bold(target.query),
-              f'({target.type.name})')
+        print('Search query:', Style.bold(target.query), f'({target.type.name})')
 
         patterns = target.to_patterns()
         refs = find_relevant_refs(CONFIG['repos']['urls'], patterns)
@@ -207,8 +199,7 @@ def cmd_pgxs(main_args, make_args):
             config_files = [regress_opts.get('--temp-config')]
 
             # run commands under a running PostgreSQL instance
-            with run_temp(instance, config_files=config_files,
-                          port=port) as node:
+            with run_temp(instance, config_files=config_files, port=port) as node:
                 # make pg_regress aware of non-default port
                 make_opts.append(f'{mk_var}+=--port={node.port}')
                 extension.make(*make_targets, options=make_opts)

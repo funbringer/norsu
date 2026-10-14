@@ -1,27 +1,25 @@
+import multiprocessing
 import os
 import re
 import shlex
 import sys
-import multiprocessing
-
 from contextlib import contextmanager, redirect_stdout
 from enum import Enum
 from shutil import rmtree
-from testgres import get_new_node, configure_testgres
 
-from norsu.config import NORSU_DIR, WORK_DIR, CONFIG, TOOL_MAKE
+from testgres import PostgresNode, configure_testgres
+
+from norsu.config import CONFIG, NORSU_DIR, TOOL_MAKE, WORK_DIR
 from norsu.exceptions import LogicError, ProcessError
 from norsu.execute import ExecOutput, execute
 from norsu.extension import Extension
-from norsu.terminal import Style
-
 from norsu.git import (
     GitRepo,
     SortRefBySimilarity,
     SortRefByVersion,
     find_relevant_refs,
 )
-
+from norsu.terminal import Style
 from norsu.utils import (
     eprint,
     path_exists,
@@ -38,7 +36,7 @@ def line(name, value=None):
 
 def read_commit_file(path):
     if os.path.exists(path):
-        with open(path, 'r') as f:
+        with open(path) as f:
             return f.read().strip()
 
 
@@ -96,10 +94,12 @@ class InstanceName:
             # replace version separators with a pattern
             pattern = self.rx_sep.sub(lambda m: '[._]', pattern)
 
-            result.extend([
-                f'REL_{pattern}*',
-                f'REL{pattern}*',
-            ])
+            result.extend(
+                [
+                    f'REL_{pattern}*',
+                    f'REL{pattern}*',
+                ]
+            )
         else:
             result.append(f'*{pattern}*')
 
@@ -124,8 +124,7 @@ class Instance:
         self.ignore_file = os.path.join(self.main_dir, '.norsu_ignore')
 
         # store commit hashes (build + install)
-        self.installed_commit_file = os.path.join(self.main_dir,
-                                                  '.norsu_build')
+        self.installed_commit_file = os.path.join(self.main_dir, '.norsu_build')
         self.built_commit_file = os.path.join(self.work_dir, '.norsu_build')
 
     @property
@@ -205,10 +204,9 @@ class Instance:
         if commit:
             line('Commit:', commit)
 
-        pg_config_manual = os.path.join(self.main_dir, 'include',
-                                        'pg_config_manual.h')
+        pg_config_manual = os.path.join(self.main_dir, 'include', 'pg_config_manual.h')
         if os.path.exists(pg_config_manual):
-            with open(pg_config_manual, 'r') as f:
+            with open(pg_config_manual) as f:
                 for ln in f:
                     if ln.startswith('#define MEMORY_CONTEXT_CHECKING'):
                         break  # too late
@@ -229,8 +227,7 @@ class Instance:
         if self.ignore:
             step(Style.yellow('Ignored due to .norsu_ignore'))
 
-        elif os.path.exists(
-                self.main_dir) and not os.path.exists(self.work_dir):
+        elif os.path.exists(self.main_dir) and not os.path.exists(self.work_dir):
             step(Style.yellow('This is a standalone build, skipping'))
 
         else:
@@ -244,7 +241,7 @@ class Instance:
                 step(Style.red(str(e)))
 
                 # We'd like to print log and exit with error code
-                raise ProcessError(stderr=e.stderr)
+                raise ProcessError(stderr=e.stderr) from None
 
     def remove(self):
         for path, name in [(self.main_dir, 'main'), (self.work_dir, 'work')]:
@@ -328,17 +325,12 @@ class Instance:
         makefile = os.path.join(self.work_dir, 'GNUmakefile')
         new_conf_opts = self._configure_options_are_new(configure)
 
-        if os.path.exists(makefile) and \
-           (new_conf_opts or self.requires_rebuild):
-
+        if os.path.exists(makefile) and (new_conf_opts or self.requires_rebuild):
             # reset built commit hash
             self.built_commit_hash = None
 
             args = [TOOL_MAKE, 'distclean']
-            execute(args,
-                    cwd=self.work_dir,
-                    error=False,
-                    output=ExecOutput.Devnull)
+            execute(args, cwd=self.work_dir, error=False, output=ExecOutput.Devnull)
 
             step('Prepared work dir for a new build')
 
@@ -351,7 +343,7 @@ class Instance:
 
             jobs = int(CONFIG['build']['jobs'])
             if jobs == 0:
-                 jobs = multiprocessing.cpu_count()
+                jobs = multiprocessing.cpu_count()
 
             for arg in [f'-j{jobs}', 'install']:
                 args = [TOOL_MAKE, arg]
@@ -369,8 +361,7 @@ class Instance:
         # provide defaults
         if not extensions:
             path = os.path.join(self.work_dir, 'contrib')
-            extensions = sorted((e for e in os.listdir(path)
-                                 if os.path.isdir(os.path.join(path, e))))
+            extensions = sorted(e for e in os.listdir(path) if os.path.isdir(os.path.join(path, e)))
 
         failed = False
         for extension in extensions:
@@ -411,7 +402,7 @@ def run_temp(instance, config_files=None, **kwargs):
 
         temp_conf = '\n'.join(configs)
 
-    with get_new_node(**kwargs) as node:
+    with PostgresNode(**kwargs) as node:
         with redirect_stdout(sys.stderr):
             print('Starting temporary PostgreSQL instance...')
             print()
