@@ -8,14 +8,19 @@ RUN apk add --no-cache \
 	perl perl-ipc-run \
 	build-base make musl-dev gcc bison flex coreutils \
 	zlib-dev libedit-dev \
-	python3 python3-dev py-virtualenv
+	python3 python3-dev
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:0.12.19 /uv /uvx /usr/local/bin/
 
 # Environment
-ENV LANG=C.UTF-8 PGDATA=/pg/data
+ENV LANG=C.UTF-8 PGDATA=/pg/data \
+	UV_PYTHON_PREFERENCE=only-system \
+	UV_PROJECT_ENVIRONMENT=/tmp/venv \
+	UV_CACHE_DIR=/tmp/uv-cache
 
 # Make directories
-RUN mkdir -p ${PGDATA} \
-	mkdir -p /pg/testdir
+RUN mkdir -p ${PGDATA} /pg/testdir
 
 # Add new user
 RUN adduser postgres 2>&1 >/dev/null || true
@@ -27,7 +32,7 @@ RUN chown postgres:postgres ${PGDATA} && \
 COPY run_tests.sh /run.sh
 RUN chmod 755 /run.sh
 
-ADD . /pg/testdir
+COPY --chown=postgres:postgres . /pg/testdir
 WORKDIR /pg/testdir
 
 USER postgres

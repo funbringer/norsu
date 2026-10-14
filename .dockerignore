@@ -1,3 +1,7 @@
+.git
+.venv
+__pycache__
 pg
 results
 regression.diffs
+dist

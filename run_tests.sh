@@ -2,24 +2,14 @@
 
 set -eux
 
-PYTHON_VENV=/tmp/venv
-
-virtualenv --python=python3 $PYTHON_VENV
-export VIRTUAL_ENV_DISABLE_PROMPT=1
-source $PYTHON_VENV/bin/activate
-
-pip install flake8
+# install package & dev tools
+uv sync --locked
 
 # check code style
-flake8 .
-
-# install package
-pip install -U .
+uv run ruff check .
+uv run ruff format --check .
 
 # run tests
-./tester.sh
-
-deactivate
-rm -rf $PYTHON_VENV
+uv run ./tester.sh
 
 set +eux
