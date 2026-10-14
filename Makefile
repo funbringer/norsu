@@ -1,18 +1,30 @@
 .PHONY: all
-all: style fmt
+all: lint fmt typecheck
+
+.PHONY: sync
+sync:
+	uv sync --locked
 
 .PHONY: fmt
-fmt: pipenv-install
-	pipenv run yapf -r -i .
+fmt: sync
+	uv run ruff format .
 
-.PHONY: style
-style: pipenv-install
-	pipenv run flake8
+.PHONY: lint
+lint: sync
+	uv run ruff check .
 
-.PHONY: pipenv-install
-pipenv-install:
-	pipenv install --ignore-pipfile --dev
+.PHONY: typecheck
+typecheck: sync
+	uv run mypy norsu
+
+.PHONY: test
+test: sync
+	uv run ./tester.sh
+
+.PHONY: build
+build:
+	uv build
 
 .PHONY: install
 install:
-	pip install --user .
+	uv tool install --reinstall .

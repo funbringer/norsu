@@ -1,0 +1,52 @@
+[project]
+name = "norsu"
+version = "0.6.1"
+description = "PostgreSQL builds manager"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Dmitry Ivanov" }]
+keywords = ["PostgreSQL", "postgres", "install", "test"]
+classifiers = [
+    "Environment :: Console",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Topic :: Database",
+    "Topic :: Software Development :: Build Tools",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "testgres>=1.16.4",
+    "tomli-w>=1.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/funbringer/norsu"
+
+[project.scripts]
+norsu = "norsu.main:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "ruff>=0.17.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.mypy]
+ignore_missing_imports = true
