@@ -23,29 +23,26 @@ Currently, Norsu can:
 
 ### Setup
 
-> NOTE: Python 3.3+ is required.
+> NOTE: Python 3.11+ is required.
 
-To install a stable release, just run the following in your favorite shell:
-
-```bash
-pip install --user norsu
-```
-
-Also, make sure that [python's user base](https://pip.readthedocs.io/en/latest/user_guide/#user-installs) is in `$PATH`:
+To install a stable release, use [uv](https://docs.astral.sh/uv/):
 
 ```bash
-# add this to .bashrc (or .zshrc, whatever)
-export PATH=$PATH:$(python -c "import site; print(site.getuserbase())")/bin
+uv tool install norsu
 ```
 
-and you're good to go!
+(`pipx install norsu` works as well.) Make sure the tool bin directory is in `$PATH`
+(see `uv tool update-shell`), and you're good to go!
 
 
 To install a dev version, clone this repo and run:
 
 ```bash
-pip install --user -U .
+uv tool install --reinstall .
 ```
+
+For development, `uv sync` sets up a virtualenv with all dev tools;
+`make lint fmt typecheck` runs the checks, `make test` runs the test suite.
 
 ### Config
 
