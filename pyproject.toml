@@ -1,6 +1,6 @@
 [project]
 name = "norsu"
-version = "0.6.1"
+version = "0.7"
 description = "PostgreSQL builds manager"
 readme = "README.md"
 license = "MIT"
