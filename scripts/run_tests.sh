@@ -10,6 +10,6 @@ uv run ruff check .
 uv run ruff format --check .
 
 # run tests
-uv run ./tester.sh
+uv run ./scripts/tester.sh
 
 set +eux

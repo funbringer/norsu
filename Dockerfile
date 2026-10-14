@@ -29,7 +29,7 @@ RUN adduser postgres 2>&1 >/dev/null || true
 RUN chown postgres:postgres ${PGDATA} && \
 	chown postgres:postgres /pg/testdir
 
-COPY run_tests.sh /run.sh
+COPY scripts/run_tests.sh /run.sh
 RUN chmod 755 /run.sh
 
 COPY --chown=postgres:postgres . /pg/testdir

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2059,SC2140
 
-TEST_DIR="$(dirname "$0")"
+TEST_DIR="$(dirname "$0")/.."
 export NORSU_PATH="$TEST_DIR/pg"
 
 
@@ -73,11 +73,11 @@ for t in "$TEST_DIR"/tests/*; do
 done
 
 # show report, if any
-if [ -f regression.diffs ]; then
+if [ -f "$TEST_DIR/regression.diffs" ]; then
     echo
     printf "$YELLOW===== Diffs: =====$RESET\\n"
     echo
-    cat regression.diffs
+    cat "$TEST_DIR/regression.diffs"
 fi
 
 echo

@@ -19,7 +19,7 @@ typecheck: sync
 
 .PHONY: test
 test: sync
-	uv run ./tester.sh
+	uv run ./scripts/tester.sh
 
 .PHONY: build
 build:
