@@ -178,7 +178,7 @@ norsu pgxs 9.6.9 -R -- installcheck
 scan-build norsu pgxs 9.5 10 -- clean all
 ```
 
-#### `norsu run target [cmd_option]...`
+#### `norsu run [target] [cmd_option]...`
 
 Known `cmd_options`:
 
@@ -190,6 +190,8 @@ Known `cmd_options`:
 * `--dump` -- save DB dump to a file before node shutdown
 
 Create and run a temporary instance (DB) of PostgreSQL using build named `target`.
+If `target` is omitted, norsu picks the only installed build, or `master` if
+there are several builds; otherwise it lists the builds to choose from.
 The instance will be up & running until the command is interrupted (e.g. with `SIGINT`).
 
 Examples:

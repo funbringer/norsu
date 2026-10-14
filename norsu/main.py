@@ -85,7 +85,7 @@ examples:
 
     # norsu run
     p_run = subparsers.add_parser('run', description='run a temp instance of PostgreSQL')
-    p_run.add_argument('target', choices=known_targets)
+    p_run.add_argument('target', nargs='?', choices=known_targets)
     p_run.add_argument('--config', nargs='*', help='additional config files for PostgreSQL')
     p_run.add_argument('--psql', action='store_true', help='[DEPRECATED] run PSQL after PG has started')
     p_run.add_argument(

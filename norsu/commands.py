@@ -31,6 +31,22 @@ def known_targets(directory=NORSU_DIR):
     return {e for e in os.listdir(directory) if not e.startswith('.')}
 
 
+def default_target(directory=NORSU_DIR):
+    targets = known_targets(directory=directory)
+
+    if len(targets) == 1:
+        return next(iter(targets))
+
+    if 'master' in targets:
+        return 'master'
+
+    if not targets:
+        raise LogicError('no builds installed; please specify a target')
+
+    builds = ', '.join(sorted(targets))
+    raise LogicError(f'ambiguous target, please specify one of: {builds}')
+
+
 def preprocess_targets(raw_targets, directory=NORSU_DIR):
     entries_pos, entries_neg = partition(lambda x: x.startswith('^'), raw_targets)
 
@@ -93,7 +109,7 @@ def cmd_instance(args, _):
 
 
 def cmd_run(main_args, cli_args):
-    instance = Instance(main_args.target)
+    instance = Instance(main_args.target or default_target())
     dbname = main_args.dbname
     port = main_args.port
 
